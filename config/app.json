@@ -1,0 +1,43 @@
+{
+  "app_name": "智慧分身",
+  "database_path": "data/smart_avatar.db",
+  "skills_dir": "skills",
+  "tools_dir": "tools",
+  "web_dir": "web",
+  "recordings_dir": "data/recordings",
+  "api": {
+    "prefix": "/api/v1",
+    "legacy_prefix_enabled": true
+  },
+  "security": {
+    "api_key_enabled": false,
+    "api_key_env": "SMART_AVATAR_API_KEY",
+    "public_paths": ["/", "/static", "/health", "/docs", "/openapi.json"]
+  },
+  "rate_limit": {
+    "enabled": true,
+    "requests_per_minute": 120
+  },
+  "model": {
+    "provider": "dry_run",
+    "default_model": "dry-run",
+    "base_url": null,
+    "api_key_env": null,
+    "timeout_seconds": 60
+  },
+  "transcription": {
+    "provider": "dry_run",
+    "model_size": "base",
+    "device": "cpu",
+    "compute_type": "int8",
+    "default_language": "zh",
+    "auto_extract": true,
+    "max_cards_per_recording": 5,
+    "auto_delete_after_days": null
+  },
+  "privacy": {
+    "require_skill_confirmation": true,
+    "allow_raw_memory_to_tools": false,
+    "audit_all_tool_calls": true
+  }
+}

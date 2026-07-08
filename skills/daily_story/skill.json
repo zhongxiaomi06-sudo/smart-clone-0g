@@ -1,0 +1,27 @@
+{
+  "name": "daily_story",
+  "display_name": "每日故事生成",
+  "type": "skill",
+  "version": "0.1.0",
+  "description": "基于用户主动授权的脱敏记忆卡片，生成魔幻现实主义个人故事。",
+  "triggers": ["故事", "神话", "小说", "续写", "story", "fiction"],
+  "entry": {
+    "kind": "prompt_template",
+    "prompt_path": "prompt.md"
+  },
+  "memory_scope": {
+    "default_time_range": null,
+    "allowed_fields": ["event_summary", "emotion", "insight", "personality_signals", "tags"],
+    "requires_user_confirm": true
+  },
+  "permissions": ["memory:read:desensitized", "story:write"],
+  "output_schema": [
+    "title",
+    "story",
+    "real_anchors",
+    "fictional_elements",
+    "personality_focus",
+    "continuation_hook"
+  ]
+}
+

@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>智慧分身</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">跳到主内容</a>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">ZS</div>
+          <div>
+            <h1>智慧分身</h1>
+            <p>Memory OS</p>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="功能区">
+          <button class="nav-item is-active" data-tab="chat" type="button">Chat</button>
+          <button class="nav-item" data-tab="recordings" type="button">录音</button>
+          <button class="nav-item" data-tab="memories" type="button">记忆</button>
+          <button class="nav-item" data-tab="skills" type="button">Skill</button>
+          <button class="nav-item" data-tab="tools" type="button">MCP</button>
+          <button class="nav-item" data-tab="trust" type="button">授权与凭证</button>
+          <button class="nav-item" data-tab="audit" type="button">审计</button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <label for="api-key">API Key</label>
+          <input id="api-key" type="password" autocomplete="off" placeholder="可选" />
+          <button id="save-api-key" class="button button-secondary" type="button">保存密钥</button>
+        </div>
+      </aside>
+
+      <main id="main" class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">本地优先 · Chat 主入口 · Skill 可插拔</p>
+            <h2 id="view-title">Chat 中枢</h2>
+          </div>
+          <div class="status-strip" aria-label="系统状态">
+            <span id="health-status" class="status-pill">检查中</span>
+            <span id="request-status" class="status-pill muted">就绪</span>
+          </div>
+        </header>
+
+        <section id="tab-chat" class="tab-panel is-active" aria-labelledby="view-title">
+          <div class="layout-grid two-columns">
+            <section class="surface">
+              <div class="section-heading">
+                <h3>对话请求</h3>
+                <p>Chat 会先检索记忆，再按需调用 Skill。</p>
+              </div>
+              <form id="chat-form" class="form-stack">
+                <label for="chat-message">消息</label>
+                <textarea id="chat-message" required rows="5" placeholder="例如：帮我复盘最近让我消耗的事情"></textarea>
+
+                <div class="field-row">
+                  <div>
+                    <label for="chat-skill">指定 Skill</label>
+                    <select id="chat-skill">
+                      <option value="">自动判断</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label for="chat-token">权限 Token</label>
+                    <input id="chat-token" type="text" autocomplete="off" placeholder="可选" />
+                  </div>
+                </div>
+
+                <label class="checkbox-line">
+                  <input id="chat-confirmed" type="checkbox" />
+                  <span>本次确认授权读取脱敏记忆</span>
+                </label>
+
+                <button class="button button-primary" type="submit">发送</button>
+              </form>
+            </section>
+
+            <section class="surface">
+              <div class="section-heading">
+                <h3>结果</h3>
+                <p>引用来源会显示在回答下方。</p>
+              </div>
+              <div id="chat-result" class="result-box empty-state">等待输入。</div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-recordings" class="tab-panel" aria-labelledby="view-title">
+          <div class="layout-grid two-columns">
+            <section class="surface">
+              <div class="section-heading">
+                <h3>录音采集</h3>
+                <p>原始音频只保留在本地,转写后自动提炼为脱敏记忆卡片。</p>
+              </div>
+              <div class="recorder-box">
+                <div class="recorder-controls">
+                  <button id="record-toggle" class="button button-primary" type="button">开始录音</button>
+                  <button id="record-upload" class="button button-secondary" type="button" disabled>上传并转写</button>
+                </div>
+                <div class="recorder-meta">
+                  <span id="record-status" class="status-pill muted">未开始</span>
+                  <span id="record-timer" class="meta-line">00:00</span>
+                </div>
+                <audio id="record-preview" controls class="recorder-preview" hidden></audio>
+                <p class="muted-text recorder-hint" id="recorder-hint">点击"开始录音"授权麦克风。全天可分段录制多次,每段会独立转写并入库。</p>
+              </div>
+              <form id="recording-upload-form" class="form-stack recorder-upload-form">
+                <label for="recording-file">或选择已有音频文件上传</label>
+                <input id="recording-file" type="file" accept="audio/*" />
+                <button class="button button-secondary" type="submit">上传文件</button>
+              </form>
+            </section>
+
+            <section class="surface">
+              <div class="section-heading">
+                <h3>录音仓库</h3>
+                <p>每段录音的转写状态与提炼结果会显示在这里。</p>
+              </div>
+              <div id="recording-list" class="item-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-memories" class="tab-panel" aria-labelledby="view-title">
+          <div class="layout-grid two-columns">
+            <section class="surface">
+              <div class="section-heading">
+                <h3>新增记忆</h3>
+                <p>这里只写入脱敏后的结构化卡片。</p>
+              </div>
+              <form id="memory-form" class="form-stack">
+                <label for="memory-summary">事件摘要</label>
+                <textarea id="memory-summary" required rows="4" placeholder="用户在一次讨论中坚持表达自己的判断。"></textarea>
+
+                <div class="field-row">
+                  <div>
+                    <label for="memory-time">时间范围</label>
+                    <input id="memory-time" type="text" placeholder="上午 / 下午 / 今天" />
+                  </div>
+                  <div>
+                    <label for="memory-emotion">情绪</label>
+                    <input id="memory-emotion" type="text" placeholder="紧张但坚定" />
+                  </div>
+                </div>
+
+                <label for="memory-insight">洞察</label>
+                <textarea id="memory-insight" rows="3" placeholder="用户更在意观点是否被充分理解。"></textarea>
+
+                <div class="field-row">
+                  <div>
+                    <label for="memory-tags">标签</label>
+                    <input id="memory-tags" type="text" placeholder="工作, 沟通" />
+                  </div>
+                  <div>
+                    <label for="memory-signals">性格侧面</label>
+                    <input id="memory-signals" type="text" placeholder="执着, 责任感" />
+                  </div>
+                </div>
+
+                <button class="button button-primary" type="submit">写入记忆</button>
+              </form>
+            </section>
+
+            <section class="surface">
+              <div class="section-heading">
+                <h3>记忆仓库</h3>
+                <p>按最新创建时间展示。</p>
+              </div>
+              <div id="memory-list" class="item-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-skills" class="tab-panel" aria-labelledby="view-title">
+          <section class="surface">
+            <div class="section-heading">
+              <h3>Skill Registry</h3>
+              <p>场景能力通过配置接入，不写进核心代码。</p>
+            </div>
+            <div id="skill-list" class="table-shell"></div>
+          </section>
+        </section>
+
+        <section id="tab-tools" class="tab-panel" aria-labelledby="view-title">
+          <section class="surface">
+            <div class="section-heading">
+              <h3>MCP 工具</h3>
+              <p>工具默认关闭，启用前需要权限和审计策略。</p>
+            </div>
+            <div id="tool-list" class="table-shell"></div>
+          </section>
+        </section>
+
+        <section id="tab-trust" class="tab-panel" aria-labelledby="view-title">
+          <div class="layout-grid two-columns">
+            <section class="surface">
+              <div class="section-heading">
+                <h3>创建授权</h3>
+                <p>生成的 Token 可用于 Chat、Skill 或工具调用。</p>
+              </div>
+              <form id="permission-form" class="form-stack">
+                <label for="permission-target">授权对象</label>
+                <input id="permission-target" required type="text" placeholder="daily_story" />
+
+                <label for="permission-scope">权限范围</label>
+                <input id="permission-scope" required type="text" placeholder="memory:read:desensitized, story:write" />
+
+                <button class="button button-primary" type="submit">创建授权</button>
+              </form>
+              <div id="permission-result" class="result-box compact empty-state">暂无授权。</div>
+            </section>
+
+            <section class="surface">
+              <div class="section-heading">
+                <h3>本地哈希凭证</h3>
+                <p>只保存不可逆摘要，不上传隐私明文。</p>
+              </div>
+              <form id="credential-form" class="form-stack">
+                <div class="field-row">
+                  <div>
+                    <label for="credential-type">对象类型</label>
+                    <input id="credential-type" required type="text" value="memory" />
+                  </div>
+                  <div>
+                    <label for="credential-id">对象 ID</label>
+                    <input id="credential-id" required type="text" placeholder="mem_xxx" />
+                  </div>
+                </div>
+
+                <label for="credential-payload">凭证内容 JSON</label>
+                <textarea id="credential-payload" required rows="6" placeholder='{"event_summary":"脱敏后的事件摘要"}'></textarea>
+
+                <button class="button button-primary" type="submit">生成凭证</button>
+              </form>
+              <div id="credential-list" class="item-list"></div>
+            </section>
+          </div>
+        </section>
+
+        <section id="tab-audit" class="tab-panel" aria-labelledby="view-title">
+          <section class="surface">
+            <div class="section-heading">
+              <h3>审计日志</h3>
+              <p>记录记忆、Skill、工具、权限和凭证操作。</p>
+            </div>
+            <div id="audit-list" class="item-list"></div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
+

@@ -1,0 +1,26 @@
+{
+  "name": "weekly_review",
+  "display_name": "周复盘",
+  "type": "skill",
+  "version": "0.1.0",
+  "description": "基于一段时间内的脱敏记忆卡片，总结情绪、事件和行为模式。",
+  "triggers": ["复盘", "总结", "这一周", "最近", "review", "summary"],
+  "entry": {
+    "kind": "prompt_template",
+    "prompt_path": "prompt.md"
+  },
+  "memory_scope": {
+    "default_time_range": null,
+    "allowed_fields": ["event_summary", "emotion", "insight", "personality_signals", "tags"],
+    "requires_user_confirm": true
+  },
+  "permissions": ["memory:read:desensitized"],
+  "output_schema": [
+    "period_summary",
+    "recurring_patterns",
+    "emotional_trends",
+    "possible_next_actions",
+    "citations"
+  ]
+}
+

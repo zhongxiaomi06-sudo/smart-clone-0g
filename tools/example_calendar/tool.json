@@ -1,0 +1,22 @@
+{
+  "name": "example_calendar",
+  "display_name": "示例日历工具",
+  "description": "演示 MCP 工具注册格式。默认关闭，不会访问真实日历。",
+  "enabled": false,
+  "entry": {
+    "kind": "dry_run",
+    "handler": null
+  },
+  "permissions": ["tool:calendar:read"],
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "date_range": {
+        "type": "string",
+        "description": "要查询的日期范围"
+      }
+    },
+    "required": ["date_range"]
+  }
+}
+
