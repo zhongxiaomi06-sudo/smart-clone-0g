@@ -140,26 +140,36 @@ def _run_transcription_pipeline(
             auto_extract if auto_extract is not None else config.transcription.auto_extract
         )
         if should_extract:
-            cards = extractor.extract(
-                recording,
-                max_cards=config.transcription.max_cards_per_recording,
-                language=language,
-            )
-            new_ids: list[str] = []
-            for card in cards:
-                saved = store.add_memory(card)
-                new_ids.append(saved.id)
-            if new_ids:
-                recording.extracted_memory_ids = list(
-                    dict.fromkeys([*recording.extracted_memory_ids, *new_ids])
+            try:
+                cards = extractor.extract(
+                    recording,
+                    max_cards=config.transcription.max_cards_per_recording,
+                    language=language,
                 )
-                store.add_recording(recording)
+                new_ids: list[str] = []
+                for card in cards:
+                    saved = store.add_memory(card)
+                    new_ids.append(saved.id)
+                if new_ids:
+                    recording.extracted_memory_ids = list(
+                        dict.fromkeys([*recording.extracted_memory_ids, *new_ids])
+                    )
+                    store.add_recording(recording)
+                    audit.record(
+                        "recording.extract",
+                        recording.id,
+                        {"memory_ids": new_ids, "count": len(new_ids)},
+                    )
+                result.extracted_memory_ids = new_ids
+            except Exception as extract_exc:  # noqa: BLE001
+                # 提炼失败:转写已成功,记录提炼错误,不影响转写结果
                 audit.record(
-                    "recording.extract",
+                    "recording.extract_failed",
                     recording.id,
-                    {"memory_ids": new_ids, "count": len(new_ids)},
+                    {"error": str(extract_exc)},
                 )
-            result.extracted_memory_ids = new_ids
+                result.extracted_memory_ids = []
+                result.error = f"转写成功但记忆提炼失败:{extract_exc}"
     else:
         recording.transcript_status = "failed"
         recording.transcript_error = result.error or "transcription returned no text"
@@ -407,11 +417,24 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             recorded_at=utc_now(),
         )
 
-        cards = extractor.extract(
-            temp_recording,
-            max_cards=request.max_cards,
-            language=request.language,
-        )
+        try:
+            cards = extractor.extract(
+                temp_recording,
+                max_cards=request.max_cards,
+                language=request.language,
+            )
+        except Exception as extract_exc:  # noqa: BLE001
+            audit.record(
+                "memory.extract_text_failed",
+                source_id,
+                {"error": str(extract_exc)},
+            )
+            return MemoryExtractionResult(
+                recording_id=source_id,
+                memory_cards=[],
+                provider=config.model.provider,
+                error=f"记忆提炼失败:{extract_exc}",
+            )
         saved_cards: list[MemoryCard] = []
         new_ids: list[str] = []
         for card in cards:
@@ -579,11 +602,24 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
                 status_code=409,
                 detail="录音尚未完成转写,请先调用 /recordings/{id}/transcribe。",
             )
-        cards = extractor.extract(
-            recording,
-            max_cards=request.max_cards,
-            language=request.language,
-        )
+        try:
+            cards = extractor.extract(
+                recording,
+                max_cards=request.max_cards,
+                language=request.language,
+            )
+        except Exception as extract_exc:  # noqa: BLE001
+            audit.record(
+                "recording.extract_failed",
+                recording.id,
+                {"error": str(extract_exc)},
+            )
+            return MemoryExtractionResult(
+                recording_id=recording_id,
+                memory_cards=[],
+                provider=config.model.provider,
+                error=f"记忆提炼失败:{extract_exc}",
+            )
         saved_cards: list[MemoryCard] = []
         new_ids: list[str] = []
         for card in cards:

@@ -103,6 +103,7 @@ class ChatOrchestrator:
                 if parsed and parsed.get("action") == "skill_run" and parsed.get("skill_name"):
                     return parsed["skill_name"]
             except Exception:  # noqa: BLE001
+                # 模型路由失败:降级到关键词匹配结果(已是 recall)
                 pass
 
         return "recall"
@@ -181,10 +182,27 @@ class ChatOrchestrator:
         # 如果有真实模型,用模型组织回答
         if self.model_client and not self._is_dry_run():
             memory_context = self._format_memory_context(memories)
-            answer = self.model_client.generate(
-                system_prompt=_RECALL_SYSTEM_PROMPT,
-                user_prompt=f"用户问题:{request.message}\n\n可用记忆卡片:\n{memory_context}",
-            )
+            try:
+                answer = self.model_client.generate(
+                    system_prompt=_RECALL_SYSTEM_PROMPT,
+                    user_prompt=f"用户问题:{request.message}\n\n可用记忆卡片:\n{memory_context}",
+                )
+            except Exception as exc:  # noqa: BLE001
+                # 模型调用失败:返回明确的错误,不降级到 dry-run 占位文本
+                self.audit.record(
+                    "chat.model_error",
+                    "chat",
+                    {"query": request.message, "error": str(exc)},
+                )
+                return ChatResponse(
+                    action="memory_answer",
+                    answer=(
+                        f"已检索到 {len(memories)} 条相关记忆,但模型调用失败。\n"
+                        f"错误信息:{exc}\n\n"
+                        "请检查 API Key 配置或网络后重试。"
+                    ),
+                    citations=citations,
+                )
         else:
             # dry-run 模式:结构化展示记忆线索
             answer = self._format_dry_run_answer(request.message, memories)

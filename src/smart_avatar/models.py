@@ -59,14 +59,12 @@ class OpenAICompatibleClient:
             self.api_key = os.getenv(self.config.api_key_env, "")
 
     def generate(self, *, system_prompt: str, user_prompt: str) -> str:
-        try:
-            import urllib.request  # noqa: PLC0415
-        except ImportError:
-            return "[error] urllib 不可用"
+        """调用 OpenAI 兼容接口。失败时抛异常,由调用方决定降级策略。"""
+        import urllib.request  # noqa: PLC0415
 
         if not self.api_key:
-            return (
-                f"[error] API Key 未设置。请在环境变量 {self.config.api_key_env} 中配置。"
+            raise RuntimeError(
+                f"API Key 未设置。请在环境变量 {self.config.api_key_env} 中配置。"
             )
 
         url = f"{self.base_url.rstrip('/')}/chat/completions"
@@ -92,8 +90,17 @@ class OpenAICompatibleClient:
             with urllib.request.urlopen(request, timeout=self.timeout_seconds) as response:
                 data = json.loads(response.read().decode("utf-8"))
             return data["choices"][0]["message"]["content"]
+        except urllib.error.HTTPError as exc:
+            detail = ""
+            try:
+                detail = exc.read().decode("utf-8", errors="ignore")
+            except Exception:  # noqa: BLE001
+                pass
+            raise RuntimeError(f"模型调用失败(HTTP {exc.code}):{detail}") from exc
+        except urllib.error.URLError as exc:
+            raise RuntimeError(f"模型调用失败(网络错误):{exc.reason}") from exc
         except Exception as exc:  # noqa: BLE001
-            return f"[error] 模型调用失败:{exc}"
+            raise RuntimeError(f"模型调用失败:{exc}") from exc
 
 
 def create_model_client(config: ModelConfig) -> ModelClient:

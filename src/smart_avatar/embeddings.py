@@ -86,6 +86,9 @@ class LocalEmbeddingClient:
                 raise RuntimeError(
                     "sentence-transformers 未安装。请执行 pip install -e .[embedding] 安装嵌入依赖。"
                 ) from exc
+            # 国内网络兜底:HuggingFace 镜像(可被环境变量覆盖)
+            import os  # noqa: PLC0415
+            os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
             self._model = SentenceTransformer(self.model_name)
         return self._model
 
@@ -103,7 +106,10 @@ class LocalEmbeddingClient:
 def create_embedding_client(config: EmbeddingConfig) -> EmbeddingClient:
     """根据配置创建嵌入器。provider 可选:dry_run / local。"""
     if config.provider == "local":
-        return LocalEmbeddingClient(model_name=config.model_name)
+        return LocalEmbeddingClient(
+            model_name=config.model_name,
+            dimension=config.dimension,
+        )
     return DryRunEmbeddingClient(dimension=config.dimension)
 
 

@@ -80,6 +80,9 @@ class WhisperLocalTranscriber:
                 raise RuntimeError(
                     "faster-whisper 未安装。请执行 pip install -e .[asr] 安装 ASR 依赖。"
                 ) from exc
+            # 国内网络兜底:HuggingFace 镜像(可被环境变量覆盖)
+            import os  # noqa: PLC0415
+            os.environ.setdefault("HF_ENDPOINT", "https://hf-mirror.com")
             self._model = WhisperModel(
                 self.model_size,
                 device=self.device,
@@ -216,6 +219,11 @@ class MemoryExtractor:
         max_cards: int = 5,
         language: str | None = None,
     ) -> list[MemoryCard]:
+        """从转写文本提炼记忆卡片。
+
+        真实模式(provider != dry_run)调用大模型提炼,失败时抛异常,不静默降级。
+        dry_run 模式使用规则切段作为最低保障。
+        """
         transcript = recording.transcript or ""
         if not transcript.strip():
             return []
@@ -231,18 +239,21 @@ class MemoryExtractor:
         max_cards: int,
         language: str | None,
     ) -> list[MemoryCard]:
+        """真实模型提炼。失败时抛异常,不降级到规则提炼(避免伪实现)。"""
         user_prompt = EXTRACTION_USER_TEMPLATE.format(
             max_cards=max_cards,
             transcript=transcript,
         )
-        try:
-            raw = self.model_client.generate(
-                system_prompt=EXTRACTION_SYSTEM_PROMPT,
-                user_prompt=user_prompt,
+        raw = self.model_client.generate(
+            system_prompt=EXTRACTION_SYSTEM_PROMPT,
+            user_prompt=user_prompt,
+        )
+        cards_data = self._parse_json_array(raw)
+        if not cards_data:
+            raise RuntimeError(
+                "模型未返回有效的记忆卡片 JSON 数组。"
+                f"原始输出前 200 字符:{raw[:200]}"
             )
-            cards_data = self._parse_json_array(raw)
-        except Exception:  # noqa: BLE001
-            return self._extract_with_rules(transcript, recording, max_cards)
 
         cards: list[MemoryCard] = []
         for item in cards_data[:max_cards]:
@@ -250,8 +261,10 @@ class MemoryExtractor:
             item.setdefault("privacy_level", "desensitized")
             try:
                 cards.append(MemoryCard.model_validate(item))
-            except Exception:  # noqa: BLE001
+            except Exception as exc:  # noqa: BLE001
                 continue
+        if not cards:
+            raise RuntimeError("模型返回的卡片均无法通过校验,请检查模型输出格式。")
         return cards
 
     def _extract_with_rules(
