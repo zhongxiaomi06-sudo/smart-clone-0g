@@ -227,16 +227,18 @@ class MemoryExtractionRequest(BaseModel):
     """从转写文本提炼记忆卡片的请求。
 
     遵循设计文档 11.1 提示词:少发挥、多提炼、强脱敏。
+    recording_id 和 text 二选一:要么从已转写的录音提炼,要么从手动文本提炼。
     """
 
-    recording_id: str
+    recording_id: str | None = None
+    text: str | None = None
     language: str | None = None
     max_cards: int = 5
     auto_desensitize: bool = True
 
 
 class MemoryExtractionResult(BaseModel):
-    recording_id: str
+    recording_id: str | None = None
     memory_cards: list[MemoryCard] = Field(default_factory=list)
     provider: str | None = None
     error: str | None = None

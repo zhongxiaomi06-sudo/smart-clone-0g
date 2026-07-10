@@ -9,4 +9,5 @@ data/*.db
 data/*.db-*
 data/recordings/
 *.egg-info/
+.trae/
 

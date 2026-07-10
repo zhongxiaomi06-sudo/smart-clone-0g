@@ -28,6 +28,14 @@ class TranscriptionConfig(BaseModel):
     auto_delete_after_days: int | None = None
 
 
+class EmbeddingConfig(BaseModel):
+    """嵌入模型配置。遵循设计文档 5.2:本地嵌入模型将事件和洞察转为向量。"""
+
+    provider: str = "dry_run"
+    model_name: str = "BAAI/bge-small-zh-v1.5"
+    dimension: int = 256
+
+
 class PrivacyConfig(BaseModel):
     require_skill_confirmation: bool = True
     allow_raw_memory_to_tools: bool = False
@@ -64,6 +72,7 @@ class AppConfig(BaseModel):
     rate_limit: RateLimitConfig = Field(default_factory=RateLimitConfig)
     model: ModelConfig = Field(default_factory=ModelConfig)
     transcription: TranscriptionConfig = Field(default_factory=TranscriptionConfig)
+    embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
     privacy: PrivacyConfig = Field(default_factory=PrivacyConfig)
 
 
@@ -78,7 +87,25 @@ def resolve_path(value: str) -> Path:
     return project_root() / path
 
 
+def _load_env() -> None:
+    """加载项目根目录的 .env 文件,将变量注入 os.environ。"""
+    env_path = project_root() / ".env"
+    if not env_path.exists():
+        return
+    with env_path.open("r", encoding="utf-8") as env_file:
+        for line in env_file:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            if key and key not in os.environ:
+                os.environ[key] = value
+
+
 def load_config(config_path: str | None = None) -> AppConfig:
+    _load_env()
     path_value = config_path or os.getenv("SMART_AVATAR_CONFIG", "config/app.json")
     path = resolve_path(path_value)
     if not path.exists():

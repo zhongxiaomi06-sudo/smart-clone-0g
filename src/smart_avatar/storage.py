@@ -14,12 +14,14 @@ from .domain import (
     PermissionGrant,
     StateCard,
 )
+from .embeddings import cosine_similarity
 
 
 class SQLiteStore:
-    def __init__(self, database_path: Path) -> None:
+    def __init__(self, database_path: Path, embedding_client=None) -> None:
         self.database_path = database_path
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
+        self.embedding_client = embedding_client
         self._init_schema()
 
     def _connect(self) -> sqlite3.Connection:
@@ -67,6 +69,11 @@ class SQLiteStore:
                     payload text not null,
                     created_at text not null
                 );
+                create table if not exists memory_vectors (
+                    memory_id text primary key,
+                    vector text not null,
+                    created_at text not null
+                );
                 """
             )
 
@@ -77,7 +84,38 @@ class SQLiteStore:
                 "insert or replace into memory_cards (id, payload, created_at) values (?, ?, ?)",
                 (card.id, payload, card.created_at),
             )
+        # 同步更新向量索引(设计 5.2:事件和洞察字段转为向量)
+        if self.embedding_client:
+            text = self._memory_text(card)
+            vector = self.embedding_client.embed(text)
+            with self._connect() as connection:
+                connection.execute(
+                    "insert or replace into memory_vectors (memory_id, vector, created_at) values (?, ?, ?)",
+                    (card.id, json.dumps(vector), card.created_at),
+                )
         return card
+
+    def get_memory(self, memory_id: str) -> MemoryCard | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "select payload from memory_cards where id = ?",
+                (memory_id,),
+            ).fetchone()
+        if row is None:
+            return None
+        return MemoryCard.model_validate_json(row["payload"])
+
+    def delete_memory(self, memory_id: str) -> MemoryCard | None:
+        with self._connect() as connection:
+            row = connection.execute(
+                "select payload from memory_cards where id = ?",
+                (memory_id,),
+            ).fetchone()
+            if row is None:
+                return None
+            connection.execute("delete from memory_cards where id = ?", (memory_id,))
+            connection.execute("delete from memory_vectors where memory_id = ?", (memory_id,))
+        return MemoryCard.model_validate_json(row["payload"])
 
     def list_memories(self, limit: int = 50) -> list[MemoryCard]:
         with self._connect() as connection:
@@ -87,19 +125,71 @@ class SQLiteStore:
             ).fetchall()
         return [MemoryCard.model_validate_json(row["payload"]) for row in rows]
 
+    @staticmethod
+    def _memory_text(card: MemoryCard) -> str:
+        parts = [card.event_summary]
+        if card.insight:
+            parts.append(card.insight)
+        if card.emotion:
+            parts.append(card.emotion.label)
+        parts.extend(card.personality_signals)
+        parts.extend(card.tags)
+        return " ".join(parts)
+
     def query_memories(self, query: MemoryQuery) -> list[MemoryCard]:
         cards = self.list_memories(limit=500)
-        terms = [term.lower() for term in query.query.split() if term.strip()]
         if query.tags:
             cards = [card for card in cards if set(query.tags).intersection(card.tags)]
         if query.time_range:
             cards = [card for card in cards if card.time_range == query.time_range]
+
+        query_text = query.query.strip()
+        if not query_text:
+            return cards[: query.limit]
+
+        # 向量语义检索(设计 5.2:支持语义相似度检索)
+        if self.embedding_client:
+            return self._vector_search(query_text, cards, query.limit)
+
+        # 关键词检索兜底(无嵌入器时使用)
+        terms = [term.lower() for term in query_text.split() if term.strip()]
         if terms:
             matched = [card for card in cards if self._matches_terms(card, terms)]
             if not matched:
-                matched = self._loose_match(query.query, cards)
+                matched = self._loose_match(query_text, cards)
             cards = matched
         return cards[: query.limit]
+
+    def _vector_search(
+        self,
+        query_text: str,
+        cards: list[MemoryCard],
+        limit: int,
+    ) -> list[MemoryCard]:
+        """向量语义检索。对查询文本编码,与所有记忆卡片向量计算余弦相似度排序。"""
+        query_vec = self.embedding_client.embed(query_text)
+        # 从数据库加载已存向量
+        vector_map: dict[str, list[float]] = {}
+        with self._connect() as connection:
+            rows = connection.execute(
+                "select memory_id, vector from memory_vectors"
+            ).fetchall()
+        for row in rows:
+            vector_map[row["memory_id"]] = json.loads(row["vector"])
+
+        scored: list[tuple[float, MemoryCard]] = []
+        for card in cards:
+            vec = vector_map.get(card.id)
+            if vec is None:
+                # 向量缺失时实时生成
+                vec = self.embedding_client.embed(self._memory_text(card))
+            score = cosine_similarity(query_vec, vec)
+            scored.append((score, card))
+
+        scored.sort(key=lambda item: item[0], reverse=True)
+        # 过滤掉相似度过低的结果
+        threshold = 0.01
+        return [card for score, card in scored[:limit] if score >= threshold]
 
     def _matches_terms(self, card: MemoryCard, terms: list[str]) -> bool:
         values: list[str] = [
@@ -143,6 +233,20 @@ class SQLiteStore:
                 (limit,),
             ).fetchall()
         return [StateCard.model_validate_json(row["payload"]) for row in rows]
+
+    def query_states(
+        self,
+        *,
+        date_from: str | None = None,
+        date_to: str | None = None,
+        limit: int = 50,
+    ) -> list[StateCard]:
+        cards = self.list_states(limit=500)
+        if date_from:
+            cards = [card for card in cards if card.date >= date_from]
+        if date_to:
+            cards = [card for card in cards if card.date <= date_to]
+        return cards[:limit]
 
     def add_permission(self, grant: PermissionGrant) -> PermissionGrant:
         with self._connect() as connection:

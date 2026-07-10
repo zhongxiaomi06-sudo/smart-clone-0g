@@ -44,6 +44,7 @@ from .security import RequestSecurityMiddleware
 from .skills import SkillRegistry
 from .storage import SQLiteStore
 from .transcribe import MemoryExtractor, create_transcriber
+from .embeddings import create_embedding_client
 
 
 _MIME_SUFFIX = {
@@ -174,7 +175,8 @@ def _run_transcription_pipeline(
 
 def create_app(config: AppConfig | None = None) -> FastAPI:
     config = config or load_config()
-    store = SQLiteStore(resolve_path(config.database_path))
+    embedding_client = create_embedding_client(config.embedding)
+    store = SQLiteStore(resolve_path(config.database_path), embedding_client=embedding_client)
     audit = AuditService(store)
     permissions = PermissionService(store)
     credentials = CredentialService(store, audit)
@@ -187,7 +189,9 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
         model_client=model_client,
         require_confirmation=config.privacy.require_skill_confirmation,
     )
-    chat = ChatOrchestrator(store=store, skills=skills, audit=audit)
+    chat = ChatOrchestrator(
+        store=store, skills=skills, audit=audit, model_client=model_client
+    )
     mcp = McpGateway(
         tools_dir=resolve_path(config.tools_dir),
         audit=audit,
@@ -330,6 +334,141 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
             subject_id=subject_id,
             limit=limit,
         )
+
+    # ---- 记忆卡片 CRUD(设计 6 隐私红线:用户必须能删除任意记忆卡片)----
+    @api.get("/memories/{memory_id}", response_model=MemoryCard)
+    def get_memory(memory_id: str) -> MemoryCard:
+        card = store.get_memory(memory_id)
+        if card is None:
+            raise HTTPException(status_code=404, detail="Memory not found")
+        return card
+
+    @api.put("/memories/{memory_id}", response_model=MemoryCard)
+    def update_memory(memory_id: str, card: MemoryCard) -> MemoryCard:
+        if memory_id != card.id:
+            raise HTTPException(status_code=400, detail="ID 不匹配")
+        saved = store.add_memory(card)
+        audit.record("memory.update", saved.id, {"privacy_level": saved.privacy_level})
+        return saved
+
+    @api.delete("/memories/{memory_id}", response_model=MemoryCard)
+    def delete_memory(memory_id: str) -> MemoryCard:
+        card = store.delete_memory(memory_id)
+        if card is None:
+            raise HTTPException(status_code=404, detail="Memory not found")
+        audit.record("memory.delete", memory_id, {"event_summary": card.event_summary})
+        return card
+
+    # ---- 状态卡片查询(设计 5.4 StateQuery)----
+    @api.get("/states/query", response_model=list[StateCard])
+    def query_states(
+        date_from: str | None = None,
+        date_to: str | None = None,
+        limit: int = 50,
+    ) -> list[StateCard]:
+        return store.query_states(date_from=date_from, date_to=date_to, limit=limit)
+
+    # ---- 文本提炼接口(设计 5.1:手动文本输入 → 脱敏提炼 → 记忆卡片)----
+    @api.post("/memories/extract", response_model=MemoryExtractionResult)
+    def extract_memories_from_text(
+        request: MemoryExtractionRequest,
+    ) -> MemoryExtractionResult:
+        """从手动输入的文本中提炼记忆卡片。
+
+        遵循设计 5.1:滑窗内容提炼 + 实体脱敏替换。
+        text 字段直接传入文本内容;或通过 recording_id 引用已转写的录音。
+        """
+        # 确定要提炼的文本来源
+        text_content = request.text
+        source_id = "text_input"
+
+        if not text_content and request.recording_id:
+            existing = store.get_recording(request.recording_id)
+            if existing and existing.transcript:
+                text_content = existing.transcript
+                source_id = request.recording_id
+
+        if not text_content or not text_content.strip():
+            return MemoryExtractionResult(
+                recording_id=source_id,
+                memory_cards=[],
+                provider=config.model.provider,
+                error="未提供可提炼的文本内容",
+            )
+
+        # 构造临时录音对象承载文本,复用提炼器
+        from .domain import AudioRecording as _Recording  # noqa: PLC0415
+
+        temp_recording = _Recording(
+            id=source_id,
+            file_name=source_id,
+            storage_path="",
+            transcript=text_content,
+            recorded_at=utc_now(),
+        )
+
+        cards = extractor.extract(
+            temp_recording,
+            max_cards=request.max_cards,
+            language=request.language,
+        )
+        saved_cards: list[MemoryCard] = []
+        new_ids: list[str] = []
+        for card in cards:
+            saved = store.add_memory(card)
+            saved_cards.append(saved)
+            new_ids.append(saved.id)
+        if new_ids:
+            audit.record(
+                "memory.extract_text",
+                source_id,
+                {"memory_ids": new_ids, "count": len(new_ids)},
+            )
+        return MemoryExtractionResult(
+            recording_id=source_id,
+            memory_cards=saved_cards,
+            provider=config.model.provider,
+        )
+
+    # ---- 数据导出(设计 6 隐私红线:用户可导出自己的数据)----
+    @api.get("/export")
+    def export_data():
+        import json as _json  # noqa: PLC0415
+
+        memories = store.list_memories(limit=10000)
+        states = store.list_states(limit=10000)
+        recordings = store.list_recordings(limit=10000)
+        audits = store.list_audit_events(limit=10000)
+        data = {
+            "exported_at": utc_now(),
+            "memories": [card.model_dump() for card in memories],
+            "states": [card.model_dump() for card in states],
+            "recordings": [
+                {
+                    **rec.model_dump(exclude={"storage_path"}),
+                    "transcript": rec.transcript,
+                }
+                for rec in recordings
+            ],
+            "audit_events": [event.model_dump() for event in audits],
+        }
+        return JSONResponse(
+            content=data,
+            headers={
+                "Content-Disposition": "attachment; filename=smart_avatar_export.json"
+            },
+        )
+
+    # ---- 清除所有记忆(设计 6 隐私红线:用户可一键清除)----
+    @api.delete("/memories")
+    def clear_all_memories():
+        count = 0
+        cards = store.list_memories(limit=100000)
+        for card in cards:
+            store.delete_memory(card.id)
+            count += 1
+        audit.record("memory.clear_all", "all", {"deleted_count": count})
+        return {"deleted_count": count, "message": "所有记忆卡片已清除。"}
 
     # ---- 录音采集与全天语音记忆存储 ----
     # 遵循设计文档 5.1:原始音频默认只保留在本地,转写后提炼为脱敏记忆卡片。

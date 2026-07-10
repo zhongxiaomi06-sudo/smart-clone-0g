@@ -19,6 +19,9 @@ dev = [
 asr = [
   "faster-whisper>=1.0.0"
 ]
+embedding = [
+  "sentence-transformers>=2.7.0"
+]
 
 [tool.ruff]
 line-length = 100

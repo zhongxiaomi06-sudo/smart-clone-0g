@@ -1,0 +1,25 @@
+{
+  "name": "self_awareness",
+  "display_name": "自我觉察报告",
+  "type": "skill",
+  "version": "0.1.0",
+  "description": "从长期记忆中分析情绪趋势、性格侧面变化和反复出现的主题。",
+  "triggers": ["觉察", "情绪图谱", "性格趋势", "价值观", "自我觉察", "情绪趋势", "报告"],
+  "entry": {
+    "kind": "prompt_template",
+    "prompt_path": "prompt.md"
+  },
+  "memory_scope": {
+    "default_time_range": null,
+    "allowed_fields": ["event_summary", "emotion", "insight", "personality_signals", "tags", "time_range"],
+    "requires_user_confirm": true
+  },
+  "permissions": ["memory:read:desensitized"],
+  "output_schema": [
+    "emotion_patterns",
+    "personality_trends",
+    "recurring_themes",
+    "observations",
+    "suggestions"
+  ]
+}

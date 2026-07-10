@@ -57,32 +57,35 @@ class DryRunTranscriber:
         )
 
 
-@dataclass(frozen=True)
+@dataclass
 class WhisperLocalTranscriber:
     """基于 faster-whisper 的本地转写器。
 
     模型默认从 HuggingFace 下载,首次使用需要联网。之后完全离线运行,
     符合设计文档"本地优先"和"原始音频不上传"的隐私原则。
+    模型实例全局缓存,避免每次转写重新加载。
     """
 
     model_size: str = "base"
     device: str = "cpu"
     compute_type: str = "int8"
     provider_name: str = "whisper_local"
+    _model: object = None
 
-    def _load_model(self) -> Any:
-        try:
-            from faster_whisper import WhisperModel  # type: ignore[import-not-found]
-        except ImportError as exc:
-            raise RuntimeError(
-                "faster-whisper 未安装。请执行 pip install -e .[asr] 安装 ASR 依赖。"
-            ) from exc
-
-        return WhisperModel(
-            self.model_size,
-            device=self.device,
-            compute_type=self.compute_type,
-        )
+    def _get_model(self) -> Any:
+        if self._model is None:
+            try:
+                from faster_whisper import WhisperModel  # type: ignore[import-not-found]
+            except ImportError as exc:
+                raise RuntimeError(
+                    "faster-whisper 未安装。请执行 pip install -e .[asr] 安装 ASR 依赖。"
+                ) from exc
+            self._model = WhisperModel(
+                self.model_size,
+                device=self.device,
+                compute_type=self.compute_type,
+            )
+        return self._model
 
     def transcribe(
         self,
@@ -91,7 +94,7 @@ class WhisperLocalTranscriber:
         language: str | None = None,
     ) -> TranscriptionResult:
         try:
-            model = self._load_model()
+            model = self._get_model()
             segments, info = model.transcribe(
                 str(audio_path),
                 language=language,

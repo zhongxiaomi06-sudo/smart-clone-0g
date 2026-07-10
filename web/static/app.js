@@ -10,9 +10,135 @@ const titles = {
   recordings: "录音采集",
   memories: "记忆仓库",
   skills: "Skill Registry",
+  story: "今日故事",
   tools: "MCP 工具",
   trust: "授权与凭证",
+  settings: "设置",
   audit: "审计日志",
+};
+
+const gsapAnim = {
+  reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  hasGsap: typeof gsap !== "undefined",
+
+  panelTransition(fromPanel, toPanel) {
+    if (!toPanel) return;
+    if (this._panelTl) {
+      this._panelTl.kill();
+      this._panelTl = null;
+    }
+    if (!this.hasGsap || this.reducedMotion) {
+      if (fromPanel && fromPanel !== toPanel) fromPanel.classList.remove("is-active");
+      toPanel.classList.add("is-active");
+      return;
+    }
+    document.querySelectorAll(".tab-panel").forEach((p) => {
+      if (p !== toPanel && p !== fromPanel) {
+        p.classList.remove("is-active");
+        gsap.set(p, { opacity: 1, y: 0 });
+      }
+    });
+    const tl = gsap.timeline();
+    if (fromPanel && fromPanel !== toPanel) {
+      tl.to(fromPanel, { opacity: 0, y: -10, duration: 0.3, ease: "power2.out" });
+      tl.add(() => {
+        fromPanel.classList.remove("is-active");
+        gsap.set(fromPanel, { opacity: 1, y: 0 });
+        toPanel.classList.add("is-active");
+      });
+      tl.fromTo(toPanel, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" });
+    } else {
+      toPanel.classList.add("is-active");
+      tl.fromTo(toPanel, { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 0.3, ease: "power2.out" });
+    }
+    this._panelTl = tl;
+  },
+
+  staggerItems(container, selector) {
+    if (!container) return;
+    const items = container.querySelectorAll(selector);
+    if (!items.length) return;
+    if (!this.hasGsap || this.reducedMotion) return;
+    gsap.from(items, { opacity: 0, y: 15, duration: 0.4, stagger: 0.06, ease: "power2.out" });
+  },
+
+  buttonHover(elements) {
+    if (!this.hasGsap || this.reducedMotion || !elements) return;
+    elements.forEach((el) => {
+      el.addEventListener("mouseenter", () => gsap.to(el, { scale: 1.02, duration: 0.2, ease: "power2.out" }));
+      el.addEventListener("mouseleave", () => gsap.to(el, { scale: 1, duration: 0.2, ease: "power2.out" }));
+      el.addEventListener("mousedown", () => gsap.to(el, { scale: 0.98, duration: 0.1, ease: "power2.out" }));
+      el.addEventListener("mouseup", () => gsap.to(el, { scale: 1.02, duration: 0.2, ease: "power2.out" }));
+    });
+  },
+
+  navHover(elements) {
+    if (!this.hasGsap || this.reducedMotion || !elements) return;
+    elements.forEach((el) => {
+      el.addEventListener("mouseenter", () => gsap.to(el, { x: 3, duration: 0.2, ease: "power2.out" }));
+      el.addEventListener("mouseleave", () => gsap.to(el, { x: 0, duration: 0.2, ease: "power2.out" }));
+    });
+  },
+
+  navActivate(element) {
+    if (!this.hasGsap || this.reducedMotion || !element) return;
+    gsap.fromTo(element, { scale: 0.96 }, { scale: 1, duration: 0.35, ease: "back.out(1.7)" });
+  },
+
+  showToast(element) {
+    if (!this.hasGsap || this.reducedMotion) {
+      element.style.opacity = 1;
+      element.style.transform = "translateY(0)";
+      return;
+    }
+    gsap.fromTo(element, { y: 20, opacity: 0, scale: 0.95 }, { y: 0, opacity: 1, scale: 1, duration: 0.3, ease: "back.out(1.7)" });
+  },
+
+  hideToast(element) {
+    if (!this.hasGsap || this.reducedMotion) {
+      element.style.opacity = 0;
+      element.style.transform = "translateY(20px)";
+      return;
+    }
+    gsap.to(element, { y: 20, opacity: 0, duration: 0.25, ease: "power2.in" });
+  },
+
+  formSubmitFeedback(button) {
+    if (!this.hasGsap || this.reducedMotion || !button) return;
+    const tl = gsap.timeline();
+    tl.to(button, { scale: 0.95, duration: 0.1, ease: "power2.out" });
+    tl.to(button, { scale: 1, duration: 0.2, ease: "back.out(2)" });
+  },
+
+  resultFadeIn(element) {
+    if (!element) return;
+    if (!this.hasGsap || this.reducedMotion) return;
+    gsap.fromTo(element, { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.35, ease: "power2.out" });
+  },
+
+  errorShake(element) {
+    if (!element) return;
+    if (!this.hasGsap || this.reducedMotion) return;
+    gsap.fromTo(element, { x: 0 }, { keyframes: [{ x: -5 }, { x: 5 }, { x: -3 }, { x: 3 }, { x: 0 }], duration: 0.4, ease: "power2.inOut" });
+  },
+
+  recordingPulse(element, active) {
+    if (!element) return;
+    if (active) {
+      if (!this.hasGsap || this.reducedMotion) return;
+      if (element._pulseTl) element._pulseTl.kill();
+      element._pulseTl = gsap.timeline({ repeat: -1, yoyo: true });
+      element._pulseTl.to(element, { scale: 1.04, duration: 0.8, ease: "sine.inOut" });
+    } else {
+      if (element._pulseTl) {
+        element._pulseTl.kill();
+        element._pulseTl = null;
+      }
+      if (this.hasGsap && !this.reducedMotion) {
+        gsap.to(element, { scale: 1, duration: 0.3, ease: "power2.out" });
+      }
+    }
+  },
 };
 
 const elements = {};
@@ -31,6 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindNavigation();
   bindForms();
   restoreApiKey();
+  initHoverInteractions();
   refreshAll();
 });
 
@@ -47,19 +174,25 @@ function cacheElements() {
   elements.recordTimer = document.querySelector("#record-timer");
   elements.recordPreview = document.querySelector("#record-preview");
   elements.recorderHint = document.querySelector("#recorder-hint");
+  elements.recorderBox = document.querySelector(".recorder-box");
+  elements.recorderWaveform = document.querySelector("#recorder-waveform");
 }
 
 function bindNavigation() {
   document.querySelectorAll(".nav-item").forEach((button) => {
     button.addEventListener("click", () => {
       const tab = button.dataset.tab;
+      const currentPanel = document.querySelector(".tab-panel.is-active");
+      const targetPanel = document.querySelector(`#tab-${tab}`);
+      if (currentPanel === targetPanel) return;
+
       document.querySelectorAll(".nav-item").forEach((item) => {
         item.classList.toggle("is-active", item === button);
       });
-      document.querySelectorAll(".tab-panel").forEach((panel) => {
-        panel.classList.toggle("is-active", panel.id === `tab-${tab}`);
-      });
       elements.viewTitle.textContent = titles[tab] || "智慧分身";
+      gsapAnim.navActivate(button);
+      gsapAnim.panelTransition(currentPanel, targetPanel);
+
       if (tab === "audit") {
         loadAudit();
       }
@@ -68,6 +201,11 @@ function bindNavigation() {
       }
     });
   });
+}
+
+function initHoverInteractions() {
+  gsapAnim.buttonHover(document.querySelectorAll(".button"));
+  gsapAnim.navHover(document.querySelectorAll(".nav-item"));
 }
 
 function bindForms() {
@@ -90,6 +228,21 @@ function bindForms() {
   const uploadForm = document.querySelector("#recording-upload-form");
   if (uploadForm) {
     uploadForm.addEventListener("submit", submitRecordingFile);
+  }
+
+  const storyForm = document.querySelector("#story-form");
+  if (storyForm) {
+    storyForm.addEventListener("submit", submitStory);
+  }
+
+  const extractForm = document.querySelector("#extract-form");
+  if (extractForm) {
+    extractForm.addEventListener("submit", submitExtract);
+  }
+
+  const clearBtn = document.querySelector("#clear-memories");
+  if (clearBtn) {
+    clearBtn.addEventListener("click", clearAllMemories);
   }
 }
 
@@ -138,9 +291,14 @@ async function loadHealth() {
   try {
     const response = await fetch("/health");
     const data = await response.json();
-    elements.healthStatus.textContent = data.status === "ok" ? "服务正常" : "服务异常";
+    const ok = data.status === "ok";
+    elements.healthStatus.textContent = ok ? "服务正常" : "服务异常";
+    elements.healthStatus.classList.toggle("is-ok", ok);
+    elements.healthStatus.classList.toggle("is-error", !ok);
   } catch (error) {
     elements.healthStatus.textContent = "服务异常";
+    elements.healthStatus.classList.toggle("is-ok", false);
+    elements.healthStatus.classList.toggle("is-error", true);
   }
 }
 
@@ -192,6 +350,8 @@ async function loadCredentials() {
 
 async function submitChat(event) {
   event.preventDefault();
+  const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+  gsapAnim.formSubmitFeedback(submitButton);
   const payload = {
     message: document.querySelector("#chat-message").value.trim(),
     skill_name: valueOrNull(document.querySelector("#chat-skill").value),
@@ -205,14 +365,18 @@ async function submitChat(event) {
       body: JSON.stringify(payload),
     });
     renderChatResult(data);
+    gsapAnim.resultFadeIn(document.querySelector("#chat-result"));
     await Promise.allSettled([loadAudit(), loadCredentials()]);
   } catch (error) {
     renderText("#chat-result", error.message, true);
+    gsapAnim.errorShake(document.querySelector("#chat-result"));
   }
 }
 
 async function submitMemory(event) {
   event.preventDefault();
+  const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+  gsapAnim.formSubmitFeedback(submitButton);
   const emotionLabel = document.querySelector("#memory-emotion").value.trim();
   const payload = {
     event_summary: document.querySelector("#memory-summary").value.trim(),
@@ -237,26 +401,40 @@ async function submitMemory(event) {
 
 async function submitPermission(event) {
   event.preventDefault();
+  const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+  gsapAnim.formSubmitFeedback(submitButton);
   const payload = {
     target: document.querySelector("#permission-target").value.trim(),
     scope: splitList(document.querySelector("#permission-scope").value),
   };
+  const resultBox = document.querySelector("#permission-result");
   try {
     const data = await apiFetch("/permissions/grants", {
       method: "POST",
       body: JSON.stringify(payload),
     });
-    renderText("#permission-result", `Token: ${data.id}`);
+    resultBox.classList.remove("empty-state");
+    resultBox.style.color = "";
+    resultBox.innerHTML = `
+      <div class="permission-result-label">授权 Token</div>
+      <div class="permission-token-block">${escapeHtml(data.id)}</div>
+      <div class="permission-result-hint">已自动填入 Chat 的权限 Token 输入框。</div>
+    `;
+    gsapAnim.resultFadeIn(resultBox);
     document.querySelector("#chat-token").value = data.id;
     showToast("授权已创建。");
     await loadAudit();
   } catch (error) {
-    renderText("#permission-result", error.message, true);
+    resultBox.classList.remove("empty-state");
+    resultBox.innerHTML = `<p style="color: var(--danger); margin: 0;">${escapeHtml(error.message)}</p>`;
+    gsapAnim.errorShake(resultBox);
   }
 }
 
 async function submitCredential(event) {
   event.preventDefault();
+  const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+  gsapAnim.formSubmitFeedback(submitButton);
   let payloadContent;
   try {
     payloadContent = JSON.parse(document.querySelector("#credential-payload").value);
@@ -296,12 +474,44 @@ function renderSkillSelect(skills) {
 
 function renderChatResult(data) {
   const result = document.querySelector("#chat-result");
-  const citations = data.citations?.map((item) => `- ${item.source_id}: ${item.summary || ""}`);
-  const skill = data.skill_result
-    ? `\n\nSkill 状态：${data.skill_result.status}\n审计 ID：${data.skill_result.audit_id || "无"}`
-    : "";
   result.classList.remove("empty-state");
-  result.textContent = `${data.answer}${skill}\n\n引用：\n${citations?.join("\n") || "无"}`;
+  result.classList.add("is-structured");
+  result.style.color = "";
+
+  const answer = data.answer || "";
+  const skill = data.skill_result;
+  const citations = data.citations || [];
+
+  const skillHtml = skill
+    ? `<div class="chat-result-skill">
+        <div class="chat-result-skill-label">Skill 状态</div>
+        <div class="chat-result-skill-status">${escapeHtml(skill.status || "—")}</div>
+        <div class="chat-result-skill-audit">审计 ID:${escapeHtml(skill.audit_id || "无")}</div>
+      </div>`
+    : "";
+
+  const citationsHtml = citations.length
+    ? `<div class="chat-result-citations">
+        <div class="chat-result-citations-label">引用来源</div>
+        <ol class="chat-result-citations-list">
+          ${citations.map((item, i) => `
+            <li class="chat-result-citation">
+              <span class="chat-result-citation-marker">${i + 1}</span>
+              <span class="chat-result-citation-body">
+                <span class="chat-result-citation-source">${escapeHtml(item.source_id || "")}</span>
+                ${item.summary ? `<span class="chat-result-citation-summary">${escapeHtml(item.summary)}</span>` : ""}
+              </span>
+            </li>
+          `).join("")}
+        </ol>
+      </div>`
+    : "";
+
+  result.innerHTML = `
+    <div class="chat-result-answer">${escapeHtml(answer)}</div>
+    ${skillHtml}
+    ${citationsHtml}
+  `;
 }
 
 function renderMemories(memories) {
@@ -314,26 +524,67 @@ function renderMemories(memories) {
   memories.forEach((memory) => {
     const item = document.createElement("article");
     item.className = "list-item";
+    const emotionHtml = memory.emotion
+      ? `<div class="memory-emotion">情绪:${escapeHtml(memory.emotion.label)}</div>`
+      : "";
     item.innerHTML = `
-      <header>
-        <h4>${escapeHtml(memory.time_range || "未标注时间")}</h4>
-        <span class="meta-line">${escapeHtml(memory.id)}</span>
+      <header class="memory-header">
+        <div class="memory-time">
+          <svg class="memory-time-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <h4>${escapeHtml(memory.time_range || "未标注时间")}</h4>
+        </div>
+        <span class="memory-id">${escapeHtml(memory.id)}</span>
       </header>
-      <p>${escapeHtml(memory.event_summary)}</p>
-      ${memory.insight ? `<p class="muted-text">${escapeHtml(memory.insight)}</p>` : ""}
-      <div class="tag-row">${renderTags(memory.tags || [])}${renderTags(memory.personality_signals || [])}</div>
+      <p class="memory-summary">${escapeHtml(memory.event_summary)}</p>
+      ${emotionHtml}
+      ${memory.insight ? `<div class="memory-insight">${escapeHtml(memory.insight)}</div>` : ""}
+      <div class="memory-chips">
+        ${renderChipGroup("标签", memory.tags || [])}
+        ${renderChipGroup("性格", memory.personality_signals || [], "tag-accent")}
+      </div>
+      <div class="memory-actions">
+        <button class="button button-secondary" type="button" data-action="delete">删除</button>
+      </div>
     `;
+    item.querySelector('[data-action="delete"]').addEventListener("click", () => {
+      deleteMemory(memory.id);
+    });
     target.append(item);
   });
+  gsapAnim.staggerItems(target, ".list-item");
+  gsapAnim.buttonHover(target.querySelectorAll(".button"));
+}
+
+async function deleteMemory(memoryId) {
+  if (!confirm("确认删除这条记忆卡片?此操作不可撤销。")) {
+    return;
+  }
+  try {
+    await apiFetch(`/memories/${encodeURIComponent(memoryId)}`, { method: "DELETE" });
+    showToast("记忆已删除。");
+    await Promise.allSettled([loadMemories(), loadAudit()]);
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 
 function renderSkills(skills) {
   const rows = skills.map((skill) => `
     <tr>
-      <td><strong>${escapeHtml(skill.display_name)}</strong><div class="meta-line">${escapeHtml(skill.name)}</div></td>
+      <td>
+        <div class="skill-name">
+          <span class="skill-name-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.085.706 1.698v.014c0 .613-.236 1.228-.706 1.698l-1.611 1.611a.984.984 0 0 1-.837.289c-.322-.049-.648.059-.878.289l-1.568 1.568c-.47.47-1.228.47-1.698 0l-1.568-1.568a1.001 1.001 0 0 0-.878-.289c-.322.049-.648-.059-.878-.289l-1.568-1.568c-.47-.47-.47-1.229 0-1.698l1.568-1.568c.23-.23.338-.556.289-.878-.049-.322.059-.648.289-.878l1.611-1.611c.47-.47 1.228-.47 1.698 0l1.568 1.568c.23.23.556.338.878.289z"/></svg>
+          </span>
+          <div class="skill-name-text">
+            <strong>${escapeHtml(skill.display_name)}</strong>
+            <div class="meta-line">${escapeHtml(skill.name)}</div>
+          </div>
+        </div>
+      </td>
       <td>${escapeHtml(skill.description)}</td>
-      <td>${renderTags(skill.permissions || [])}</td>
-      <td>${renderTags(skill.triggers || [])}</td>
+      <td><div class="chip-cell">${renderTags(skill.permissions || [])}</div></td>
+      <td><div class="chip-cell">${renderTags(skill.triggers || [])}</div></td>
     </tr>
   `);
   renderTable("#skill-list", ["名称", "说明", "权限", "触发词"], rows, "暂无 Skill。");
@@ -342,10 +593,20 @@ function renderSkills(skills) {
 function renderTools(tools) {
   const rows = tools.map((tool) => `
     <tr>
-      <td><strong>${escapeHtml(tool.display_name)}</strong><div class="meta-line">${escapeHtml(tool.name)}</div></td>
+      <td>
+        <div class="skill-name">
+          <span class="skill-name-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0V8z"/><path d="M12 17v5"/></svg>
+          </span>
+          <div class="skill-name-text">
+            <strong>${escapeHtml(tool.display_name)}</strong>
+            <div class="meta-line">${escapeHtml(tool.name)}</div>
+          </div>
+        </div>
+      </td>
       <td>${escapeHtml(tool.description)}</td>
-      <td>${tool.enabled ? "已启用" : "已关闭"}</td>
-      <td>${renderTags(tool.permissions || [])}</td>
+      <td><span class="status-indicator ${tool.enabled ? "is-enabled" : "is-disabled"}">${tool.enabled ? "已启用" : "已关闭"}</span></td>
+      <td><div class="chip-cell">${renderTags(tool.permissions || [])}</div></td>
     </tr>
   `);
   renderTable("#tool-list", ["名称", "说明", "状态", "权限"], rows, "暂无工具。");
@@ -360,17 +621,29 @@ function renderAudit(events) {
   }
   events.forEach((event) => {
     const item = document.createElement("article");
-    item.className = "list-item";
+    item.className = "list-item audit-entry";
     item.innerHTML = `
-      <header>
-        <h4>${escapeHtml(event.event_type)}</h4>
-        <span class="meta-line">${escapeHtml(event.created_at)}</span>
-      </header>
-      <div class="meta-line">target=${escapeHtml(event.target)} · id=${escapeHtml(event.id)}</div>
-      <pre>${escapeHtml(JSON.stringify(event.payload, null, 2))}</pre>
+      <div class="audit-timeline">
+        <div class="audit-time">
+          <span class="audit-dot" aria-hidden="true"></span>
+          <span class="audit-time-text">${escapeHtml(event.created_at || "")}</span>
+        </div>
+        <div class="audit-content">
+          <div class="audit-header">
+            <span class="audit-badge ${getAuditBadgeClass(event.event_type)}">${escapeHtml(event.event_type)}</span>
+            <span class="audit-id">${escapeHtml(event.id || "")}</span>
+          </div>
+          <div class="audit-target"><strong>target:</strong> ${escapeHtml(event.target || "—")}</div>
+          <details class="audit-payload">
+            <summary>Payload</summary>
+            <pre>${escapeHtml(JSON.stringify(event.payload, null, 2))}</pre>
+          </details>
+        </div>
+      </div>
     `;
     target.append(item);
   });
+  gsapAnim.staggerItems(target, ".list-item");
 }
 
 function renderCredentials(credentials) {
@@ -382,16 +655,18 @@ function renderCredentials(credentials) {
   }
   credentials.forEach((credential) => {
     const item = document.createElement("article");
-    item.className = "list-item";
+    item.className = "list-item credential-item";
+    const statusClass = credential.anchor_status === "verified" ? "" : "muted";
     item.innerHTML = `
       <header>
         <h4>${escapeHtml(credential.subject_type)} / ${escapeHtml(credential.subject_id)}</h4>
-        <span class="meta-line">${escapeHtml(credential.anchor_status)}</span>
+        <span class="status-pill ${statusClass}">${escapeHtml(credential.anchor_status)}</span>
       </header>
-      <div class="meta-line">${escapeHtml(credential.digest)}</div>
+      <div class="credential-digest">${escapeHtml(credential.digest || "")}</div>
     `;
     target.append(item);
   });
+  gsapAnim.staggerItems(target, ".list-item");
 }
 
 function renderTable(selector, headers, rows, emptyText) {
@@ -410,18 +685,52 @@ function renderTable(selector, headers, rows, emptyText) {
 
 function renderEmpty(selector, text) {
   const target = document.querySelector(selector);
-  target.innerHTML = `<div class="empty-state">${escapeHtml(text)}</div>`;
+  target.innerHTML = `<div class="empty-state-box">
+    <div class="empty-state-icon">${getEmptyIcon(selector)}</div>
+    <div class="empty-state-text">${escapeHtml(text)}</div>
+  </div>`;
+}
+
+function getEmptyIcon(selector) {
+  const icons = {
+    "#memory-list": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+    "#recording-list": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>',
+    "#audit-list": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',
+    "#credential-list": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+    "#skill-list": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.085.706 1.698v.014c0 .613-.236 1.228-.706 1.698l-1.611 1.611a.984.984 0 0 1-.837.289c-.322-.049-.648.059-.878.289l-1.568 1.568c-.47.47-1.228.47-1.698 0l-1.568-1.568a1.001 1.001 0 0 0-.878-.289c-.322.049-.648-.059-.878-.289l-1.568-1.568c-.47-.47-.47-1.229 0-1.698l1.568-1.568c.23-.23.338-.556.289-.878-.049-.322.059-.648.289-.878l1.611-1.611c.47-.47 1.228-.47 1.698 0l1.568 1.568c.23.23.556.338.878.289z"/></svg>',
+    "#tool-list": '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6"/><path d="M15 2v6"/><path d="M6 8h12v3a6 6 0 0 1-12 0V8z"/><path d="M12 17v5"/></svg>',
+  };
+  return icons[selector] || '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>';
 }
 
 function renderText(selector, text, isError = false) {
   const target = document.querySelector(selector);
   target.classList.toggle("empty-state", false);
+  target.classList.remove("is-structured");
   target.style.color = isError ? "var(--danger)" : "inherit";
   target.textContent = text;
 }
 
 function renderTags(values) {
   return values.map((value) => `<span class="tag">${escapeHtml(value)}</span>`).join("");
+}
+
+function renderChipGroup(label, values, variant = "") {
+  if (!values || !values.length) return "";
+  const chips = values.map((v) => `<span class="tag ${variant}">${escapeHtml(v)}</span>`).join("");
+  return `<div class="chip-group"><span class="chip-label">${escapeHtml(label)}</span>${chips}</div>`;
+}
+
+function getAuditBadgeClass(eventType) {
+  if (!eventType) return "audit-badge-default";
+  const type = eventType.toLowerCase();
+  if (type.includes("memory")) return "audit-badge-memory";
+  if (type.includes("skill")) return "audit-badge-skill";
+  if (type.includes("tool")) return "audit-badge-tool";
+  if (type.includes("permission") || type.includes("grant")) return "audit-badge-permission";
+  if (type.includes("credential")) return "audit-badge-credential";
+  if (type.includes("recording") || type.includes("transcri")) return "audit-badge-recording";
+  return "audit-badge-default";
 }
 
 function splitList(value) {
@@ -442,10 +751,10 @@ function setRequestStatus(text) {
 
 function showToast(message) {
   elements.toast.textContent = message;
-  elements.toast.classList.add("is-visible");
   window.clearTimeout(showToast.timer);
+  gsapAnim.showToast(elements.toast);
   showToast.timer = window.setTimeout(() => {
-    elements.toast.classList.remove("is-visible");
+    gsapAnim.hideToast(elements.toast);
   }, 3200);
 }
 
@@ -497,6 +806,7 @@ async function toggleRecording() {
     elements.recordPreview.hidden = false;
     elements.recordUpload.disabled = false;
     setRecordStatus("已停止", false);
+    gsapAnim.recordingPulse(elements.recordToggle, false);
     stopTimer();
     if (recorder.stream) {
       recorder.stream.getTracks().forEach((track) => track.stop());
@@ -509,6 +819,7 @@ async function toggleRecording() {
   elements.recordUpload.disabled = true;
   elements.recordPreview.hidden = true;
   setRecordStatus("录音中", true);
+  gsapAnim.recordingPulse(elements.recordToggle, true);
   startTimer();
   elements.recorderHint.textContent = "正在录音。再次点击按钮可停止,然后上传转写。";
 }
@@ -548,6 +859,16 @@ function stopTimer() {
 function setRecordStatus(text, active) {
   elements.recordStatus.textContent = text;
   elements.recordStatus.classList.toggle("muted", !active);
+  elements.recordStatus.classList.toggle("is-recording", active);
+  if (elements.recordTimer) {
+    elements.recordTimer.classList.toggle("is-recording", active);
+  }
+  if (elements.recorderBox) {
+    elements.recorderBox.classList.toggle("is-recording", active);
+  }
+  if (elements.recorderWaveform) {
+    elements.recorderWaveform.hidden = !active;
+  }
 }
 
 async function uploadCapturedRecording() {
@@ -677,6 +998,12 @@ function renderRecordings(recordings) {
       completed: "已转写",
       failed: "转写失败",
     }[status] || status;
+    const statusClass = {
+      completed: "recording-status-completed",
+      pending: "recording-status-pending",
+      running: "recording-status-running",
+      failed: "recording-status-failed",
+    }[status] || "recording-status-pending";
     const transcriptBlock = recording.transcript
       ? `<details class="recording-transcript"><summary>转写文本</summary><p>${escapeHtml(recording.transcript)}</p></details>`
       : "";
@@ -689,7 +1016,7 @@ function renderRecordings(recordings) {
         <span class="meta-line">${escapeHtml(recording.recorded_at)} · ${formatBytes(recording.size_bytes)}</span>
       </header>
       <div class="tag-row">
-        <span class="status-pill ${status === "completed" ? "" : "muted"}">${escapeHtml(statusText)}</span>
+        <span class="status-pill ${statusClass}">${escapeHtml(statusText)}</span>
         ${recording.transcript_provider ? `<span class="tag">${escapeHtml(recording.transcript_provider)}</span>` : ""}
       </div>
       ${transcriptBlock}
@@ -712,6 +1039,8 @@ function renderRecordings(recordings) {
     });
     target.append(item);
   });
+  gsapAnim.staggerItems(target, ".list-item");
+  gsapAnim.buttonHover(target.querySelectorAll(".button"));
 }
 
 function formatBytes(bytes) {
@@ -724,5 +1053,167 @@ function formatBytes(bytes) {
     index += 1;
   }
   return `${value.toFixed(value >= 10 || index === 0 ? 0 : 1)} ${units[index]}`;
+}
+
+// ---- 今日故事(设计 5.5)----
+async function submitStory(event) {
+  event.preventDefault();
+  const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+  gsapAnim.formSubmitFeedback(submitButton);
+  const prompt = document.querySelector("#story-prompt")?.value.trim() || "生成今日故事";
+  const confirmed = document.querySelector("#story-confirmed")?.checked || false;
+  const resultBox = document.querySelector("#story-result");
+  resultBox.classList.remove("empty-state");
+  resultBox.innerHTML = '<p class="muted-text">正在生成故事...</p>';
+  try {
+    const payload = {
+      user_intent: prompt,
+      user_confirmed: confirmed,
+      memory_query: { query: prompt, limit: 10 },
+    };
+    const data = await apiFetch("/skills/daily_story/run", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    renderStoryResult(data);
+    gsapAnim.resultFadeIn(resultBox);
+    await loadAudit();
+  } catch (error) {
+    resultBox.innerHTML = `<p style="color: var(--danger)">${escapeHtml(error.message)}</p>`;
+    gsapAnim.errorShake(resultBox);
+  }
+}
+
+function renderStoryResult(data) {
+  const resultBox = document.querySelector("#story-result");
+  resultBox.classList.remove("empty-state");
+
+  if (data.status === "permission_required") {
+    resultBox.innerHTML = `
+      <p>这个 Skill 需要授权才能读取记忆。请勾选「本次确认授权」后重试。</p>
+      <p class="muted-text">缺少权限:${escapeHtml((data.missing_permissions || []).join(", "))}</p>
+    `;
+    return;
+  }
+
+  const output = data.result?.model_output || "";
+  const memoryIds = (data.used_context || []).map((c) => c.source_id);
+
+  // 尝试从 dry-run 输出或真实模型输出中提取结构化内容
+  // 真实模型会返回 markdown 格式,dry-run 返回占位文本
+  const sections = parseStorySections(output);
+
+  resultBox.innerHTML = `
+    <div class="story-section">
+      <h4 id="story-title">${escapeHtml(sections.title || "今日故事")}</h4>
+    </div>
+    <div class="story-section">
+      <h5>故事</h5>
+      <div id="story-body" class="story-body">${escapeHtml(sections.story || output || "暂无故事内容。")}</div>
+    </div>
+    <div class="story-section story-anchors" id="story-anchors">
+      <h5>今日真实锚点</h5>
+      <ul>${(sections.real_anchors || []).map((a) => `<li>${escapeHtml(a)}</li>`).join("") || "<li>暂无</li>"}</ul>
+    </div>
+    <div class="story-section story-fiction" id="story-fiction">
+      <h5>文学虚构元素</h5>
+      <ul>${(sections.fictional_elements || []).map((f) => `<li>${escapeHtml(f)}</li>`).join("") || "<li>暂无</li>"}</ul>
+    </div>
+    <div class="story-section">
+      <h5>今日性格侧面</h5>
+      <p id="story-personality">${escapeHtml(sections.personality || "暂无")}</p>
+    </div>
+    <div class="story-section">
+      <h5>续写钩子</h5>
+      <p id="story-hook">${escapeHtml(sections.hook || "暂无")}</p>
+    </div>
+    ${memoryIds.length ? `<div class="meta-line">引用记忆:${memoryIds.map((id) => `<span class="tag">${escapeHtml(id)}</span>`).join("")}</div>` : ""}
+    <div class="meta-line">审计 ID:${escapeHtml(data.audit_id || "无")}</div>
+  `;
+}
+
+function parseStorySections(text) {
+  // 简单解析 markdown 结构的故事输出
+  const sections = {
+    title: "",
+    story: "",
+    real_anchors: [],
+    fictional_elements: [],
+    personality: "",
+    hook: "",
+  };
+  if (!text) return sections;
+
+  const titleMatch = text.match(/^#\s*(.+)$/m);
+  if (titleMatch) sections.title = titleMatch[1].trim();
+
+  const storyMatch = text.match(/##\s*故事\s*\n([\s\S]*?)(?=##\s|$)/);
+  if (storyMatch) sections.story = storyMatch[1].trim();
+
+  const anchorMatch = text.match(/##\s*今日真实锚点\s*\n([\s\S]*?)(?=##\s|$)/);
+  if (anchorMatch) {
+    sections.real_anchors = anchorMatch[1].split("\n").map((l) => l.replace(/^[-*]\s*/, "").trim()).filter(Boolean);
+  }
+
+  const fictionMatch = text.match(/##\s*文学虚构元素\s*\n([\s\S]*?)(?=##\s|$)/);
+  if (fictionMatch) {
+    sections.fictional_elements = fictionMatch[1].split("\n").map((l) => l.replace(/^[-*]\s*/, "").trim()).filter(Boolean);
+  }
+
+  const personalityMatch = text.match(/##\s*今日性格侧面\s*\n([\s\S]*?)(?=##\s|$)/);
+  if (personalityMatch) sections.personality = personalityMatch[1].trim();
+
+  const hookMatch = text.match(/##\s*续写钩子\s*\n([\s\S]*?)(?=##\s|$)/);
+  if (hookMatch) sections.hook = hookMatch[1].trim();
+
+  return sections;
+}
+
+// ---- 文本提炼(设计 5.1)----
+async function submitExtract(event) {
+  event.preventDefault();
+  const submitButton = event.submitter || event.target.querySelector('button[type="submit"]');
+  gsapAnim.formSubmitFeedback(submitButton);
+  const text = document.querySelector("#extract-text")?.value.trim();
+  if (!text) {
+    showToast("请输入要提炼的文本内容。");
+    return;
+  }
+  const resultBox = document.querySelector("#extract-result");
+  resultBox.classList.remove("empty-state");
+  resultBox.innerHTML = '<p class="muted-text">正在提炼...</p>';
+  try {
+    const data = await apiFetch("/memories/extract", {
+      method: "POST",
+      body: JSON.stringify({ text: text, max_cards: 5 }),
+    });
+    if (data.memory_cards && data.memory_cards.length) {
+      resultBox.innerHTML = `<p>已提炼 ${data.memory_cards.length} 张记忆卡片:</p>` +
+        data.memory_cards.map((card) =>
+          `<div class="list-item"><p>${escapeHtml(card.event_summary)}</p>${card.insight ? `<p class="muted-text">${escapeHtml(card.insight)}</p>` : ""}</div>`
+        ).join("");
+    } else {
+      resultBox.innerHTML = `<p class="muted-text">${escapeHtml(data.error || "未能从文本中提炼记忆卡片。")}</p>`;
+    }
+    gsapAnim.resultFadeIn(resultBox);
+    await Promise.allSettled([loadMemories(), loadAudit()]);
+  } catch (error) {
+    resultBox.innerHTML = `<p style="color: var(--danger)">${escapeHtml(error.message)}</p>`;
+    gsapAnim.errorShake(resultBox);
+  }
+}
+
+// ---- 清除所有记忆(设计 6 隐私红线)----
+async function clearAllMemories() {
+  if (!confirm("确认清除所有记忆卡片?此操作不可撤销!录音和审计日志不受影响。")) {
+    return;
+  }
+  try {
+    const data = await apiFetch("/memories", { method: "DELETE" });
+    showToast(`已清除 ${data.deleted_count} 条记忆。`);
+    await Promise.allSettled([loadMemories(), loadAudit()]);
+  } catch (error) {
+    showToast(error.message);
+  }
 }
 

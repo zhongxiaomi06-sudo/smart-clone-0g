@@ -19,14 +19,14 @@
     "requests_per_minute": 120
   },
   "model": {
-    "provider": "dry_run",
-    "default_model": "dry-run",
-    "base_url": null,
-    "api_key_env": null,
+    "provider": "deepseek",
+    "default_model": "deepseek-chat",
+    "base_url": "https://api.deepseek.com/v1",
+    "api_key_env": "DEEPSEEK_API_KEY",
     "timeout_seconds": 60
   },
   "transcription": {
-    "provider": "dry_run",
+    "provider": "whisper_local",
     "model_size": "base",
     "device": "cpu",
     "compute_type": "int8",
@@ -34,6 +34,11 @@
     "auto_extract": true,
     "max_cards_per_recording": 5,
     "auto_delete_after_days": null
+  },
+  "embedding": {
+    "provider": "local",
+    "model_name": "BAAI/bge-large-zh-v1.5",
+    "dimension": 1024
   },
   "privacy": {
     "require_skill_confirmation": true,
