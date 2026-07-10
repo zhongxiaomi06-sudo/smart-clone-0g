@@ -4,7 +4,7 @@
   "type": "skill",
   "version": "0.1.0",
   "description": "基于一段时间内的脱敏记忆卡片，总结情绪、事件和行为模式。",
-  "triggers": ["复盘", "总结", "这一周", "最近", "review", "summary"],
+  "triggers": ["复盘", "总结", "这一周", "周报", "回顾这周", "review", "summary"],
   "entry": {
     "kind": "prompt_template",
     "prompt_path": "prompt.md"

@@ -257,6 +257,33 @@ def create_app(config: AppConfig | None = None) -> FastAPI:
     def health() -> dict[str, str]:
         return {"status": "ok", "app": config.app_name}
 
+    @app.get("/api/v1/config")
+    def get_config() -> dict:
+        """返回当前配置(脱敏,不含 API Key)。供前端设置页展示。"""
+        return {
+            "model": {
+                "provider": config.model.provider,
+                "default_model": config.model.default_model,
+                "base_url": config.model.base_url,
+            },
+            "transcription": {
+                "provider": config.transcription.provider,
+                "model_size": config.transcription.model_size,
+                "device": config.transcription.device,
+                "default_language": config.transcription.default_language,
+            },
+            "embedding": {
+                "provider": config.embedding.provider,
+                "model_name": config.embedding.model_name,
+                "dimension": config.embedding.dimension,
+            },
+            "privacy": {
+                "require_skill_confirmation": config.privacy.require_skill_confirmation,
+                "allow_raw_memory_to_tools": config.privacy.allow_raw_memory_to_tools,
+                "audit_all_tool_calls": config.privacy.audit_all_tool_calls,
+            },
+        }
+
     @api.post("/memories", response_model=MemoryCard)
     def create_memory(card: MemoryCard) -> MemoryCard:
         saved = store.add_memory(card)
