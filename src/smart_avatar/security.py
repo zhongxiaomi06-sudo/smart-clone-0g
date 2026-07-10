@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hmac
+import logging
 import os
 import time
 from collections import defaultdict, deque
@@ -11,6 +13,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse, Response
 
 from .config import RateLimitConfig, SecurityConfig
+
+logger = logging.getLogger("smart_avatar.security")
 
 
 class RequestSecurityMiddleware(BaseHTTPMiddleware):
@@ -30,15 +34,43 @@ class RequestSecurityMiddleware(BaseHTTPMiddleware):
         request_id = request.headers.get("x-request-id") or uuid4().hex
         request.state.request_id = request_id
 
+        # 记录请求开始
+        logger.info(
+            "request.start",
+            extra={
+                "request_id": request_id,
+                "method": request.method,
+                "path": request.url.path,
+            },
+        )
+
         auth_error = self._authenticate(request)
         if auth_error is not None:
+            logger.warning(
+                "request.unauthorized",
+                extra={"request_id": request_id, "path": request.url.path},
+            )
             return self._with_headers(auth_error, request_id)
 
         rate_limit_error = self._rate_limit(request)
         if rate_limit_error is not None:
+            logger.warning(
+                "request.rate_limited",
+                extra={
+                    "request_id": request_id,
+                    "client": self._client_ip(request),
+                },
+            )
             return self._with_headers(rate_limit_error, request_id)
 
         response = await call_next(request)
+        logger.info(
+            "request.complete",
+            extra={
+                "request_id": request_id,
+                "status_code": response.status_code,
+            },
+        )
         return self._with_headers(response, request_id)
 
     def _authenticate(self, request: Request) -> JSONResponse | None:
@@ -49,7 +81,18 @@ class RequestSecurityMiddleware(BaseHTTPMiddleware):
 
         expected_key = os.getenv(self.security.api_key_env)
         provided_key = request.headers.get("x-api-key")
-        if not expected_key or provided_key != expected_key:
+        if not expected_key or not provided_key:
+            return JSONResponse(
+                status_code=401,
+                content={
+                    "error": {
+                        "code": "unauthorized",
+                        "message": "A valid API key is required.",
+                    }
+                },
+            )
+        # 常量时间比较，防止时序攻击
+        if not hmac.compare_digest(provided_key, expected_key):
             return JSONResponse(
                 status_code=401,
                 content={
@@ -61,10 +104,20 @@ class RequestSecurityMiddleware(BaseHTTPMiddleware):
             )
         return None
 
+    def _client_ip(self, request: Request) -> str:
+        """获取客户端真实 IP，优先从 X-Forwarded-For 获取。"""
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
+        if request.client:
+            return request.client.host
+        return "unknown"
+
     def _rate_limit(self, request: Request) -> JSONResponse | None:
         if not self.rate_limit.enabled:
             return None
-        client = request.client.host if request.client else "unknown"
+        # 优先从 X-Forwarded-For 获取真实 IP
+        client = self._client_ip(request)
         now = time.monotonic()
         window = self.requests[client]
         while window and now - window[0] > 60:

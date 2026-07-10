@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from string import Template
 
@@ -16,6 +17,8 @@ from .models import ModelClient
 from .permissions import PermissionService
 from .privacy import PrivacyProjector
 from .storage import SQLiteStore
+
+logger = logging.getLogger("smart_avatar.skills")
 
 
 class SkillRegistry:
@@ -62,8 +65,16 @@ class SkillRegistry:
         if manifest is None:
             return SkillRunResult(skill_name=name, status="not_found")
 
+        # 开始执行技能
+        logger.info("skill.run.start", extra={"skill": name})
+
         missing_permissions = self._missing_permissions(manifest, request)
         if missing_permissions:
+            # 权限不足，记录警告
+            logger.warning(
+                "skill.permission_required",
+                extra={"skill": name, "missing": missing_permissions},
+            )
             audit = self.audit.record(
                 "skill.permission_required",
                 manifest.name,
@@ -87,10 +98,30 @@ class SkillRegistry:
         ]
 
         prompt = self._render_prompt(manifest, request, memories)
-        model_output = self.model_client.generate(
-            system_prompt=manifest.description,
-            user_prompt=prompt,
-        )
+        # 调用模型生成输出，捕获异常以便记录审计与日志
+        try:
+            model_output = self.model_client.generate(
+                system_prompt=manifest.description,
+                user_prompt=prompt,
+            )
+        except Exception as exc:
+            logger.error(
+                "skill.model_error",
+                extra={"skill": name, "error": str(exc)},
+            )
+            audit = self.audit.record(
+                "skill.error",
+                manifest.name,
+                {"error": str(exc), "memory_ids": [card.id for card in memories]},
+            )
+            return SkillRunResult(
+                skill_name=manifest.name,
+                status="error",
+                result={"error": str(exc)},
+                used_context=citations,
+                audit_id=audit.id,
+            )
+
         audit = self.audit.record(
             "skill.run",
             manifest.name,
@@ -98,6 +129,11 @@ class SkillRegistry:
                 "memory_ids": [card.id for card in memories],
                 "permissions": manifest.permissions,
             },
+        )
+        # 成功完成
+        logger.info(
+            "skill.run.complete",
+            extra={"skill": name, "memory_count": len(memories)},
         )
         return SkillRunResult(
             skill_name=manifest.name,

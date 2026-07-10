@@ -67,10 +67,10 @@ class ChatOrchestrator:
         self.audit = audit
         self.model_client = model_client
 
-    def handle(self, request: ChatRequest) -> ChatResponse:
+    def handle(self, request: ChatRequest, user_id: str = "default") -> ChatResponse:
         # 1. 如果用户手动指定了 Skill,直接路由到该 Skill
         if request.skill_name:
-            return self._route_to_skill(request.skill_name, request)
+            return self._route_to_skill(request.skill_name, request, user_id=user_id)
 
         # 2. 意图判断:先尝试触发词匹配,再尝试模型路由
         intent = self._classify_intent(request.message)
@@ -78,10 +78,10 @@ class ChatOrchestrator:
         # 3. 如果意图匹配到某个 Skill 类型,尝试路由
         skill = self._match_skill_by_intent(intent, request.message)
         if skill is not None:
-            return self._route_to_skill(skill.name, request)
+            return self._route_to_skill(skill.name, request, user_id=user_id)
 
         # 4. 默认走记忆检索回答
-        return self._memory_answer(request)
+        return self._memory_answer(request, user_id=user_id)
 
     def _classify_intent(self, message: str) -> str:
         """意图分类。设计 11.3:判断回忆/创作/复盘/计划/关系。"""
@@ -128,7 +128,7 @@ class ChatOrchestrator:
                 return skill_manifest
         return None
 
-    def _route_to_skill(self, skill_name: str, request: ChatRequest) -> ChatResponse:
+    def _route_to_skill(self, skill_name: str, request: ChatRequest, user_id: str = "default") -> ChatResponse:
         result = self.skills.run(
             skill_name,
             SkillRunRequest(
@@ -158,10 +158,10 @@ class ChatOrchestrator:
             skill_result=result,
         )
 
-    def _memory_answer(self, request: ChatRequest) -> ChatResponse:
+    def _memory_answer(self, request: ChatRequest, user_id: str = "default") -> ChatResponse:
         """记忆检索回答。设计 11.2:基于记忆回答,区分事实与推断。"""
         query = MemoryQuery(query=request.message, limit=request.limit)
-        memories = self.store.query_memories(query)
+        memories = self.store.query_memories(query, user_id=user_id)
         citations = [
             Citation(source_type="memory", source_id=card.id, summary=card.event_summary)
             for card in memories
@@ -170,6 +170,7 @@ class ChatOrchestrator:
             "chat.memory_query",
             "chat",
             {"query": request.message, "memory_ids": [card.id for card in memories]},
+            user_id=user_id,
         )
 
         if not memories:

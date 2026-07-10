@@ -43,11 +43,24 @@ class PrivacyConfig(BaseModel):
 
 
 class SecurityConfig(BaseModel):
-    api_key_enabled: bool = False
+    api_key_enabled: bool = False  # 保持默认 False（开发模式）
     api_key_env: str = "SMART_AVATAR_API_KEY"
+    jwt_secret_env: str = "SMART_AVATAR_JWT_SECRET"
+    jwt_expire_minutes: int = 1440  # 24 小时
+    cors_origins: list[str] = Field(default_factory=list)  # 空=不允许跨域
+    max_upload_size_mb: int = 50
     public_paths: list[str] = Field(
-        default_factory=lambda: ["/", "/static", "/health", "/docs", "/openapi.json"]
+        default_factory=lambda: ["/", "/static", "/health", "/docs", "/openapi.json", "/api/v1/auth/register", "/api/v1/auth/login", "/auth/register", "/auth/login"]
     )
+
+
+class EnvironmentConfig(BaseModel):
+    """环境配置。生产环境强制开启认证。"""
+
+    environment: str = "dev"  # dev / prod
+    database_url: str | None = None  # PostgreSQL 连接 URL（可选）
+    backup_dir: str = "data/backups"
+    log_level: str = "INFO"
 
 
 class RateLimitConfig(BaseModel):
@@ -74,6 +87,7 @@ class AppConfig(BaseModel):
     transcription: TranscriptionConfig = Field(default_factory=TranscriptionConfig)
     embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
     privacy: PrivacyConfig = Field(default_factory=PrivacyConfig)
+    environment: EnvironmentConfig = Field(default_factory=EnvironmentConfig)
 
 
 def project_root() -> Path:
@@ -109,6 +123,15 @@ def load_config(config_path: str | None = None) -> AppConfig:
     path_value = config_path or os.getenv("SMART_AVATAR_CONFIG", "config/app.json")
     path = resolve_path(path_value)
     if not path.exists():
-        return AppConfig()
-    with path.open("r", encoding="utf-8") as config_file:
-        return AppConfig.model_validate(json.load(config_file))
+        config = AppConfig()
+    else:
+        with path.open("r", encoding="utf-8") as config_file:
+            config = AppConfig.model_validate(json.load(config_file))
+
+    # 生产环境强制开启认证
+    if config.environment.environment == "prod":
+        config.security.api_key_enabled = True
+        if config.environment.log_level == "DEBUG":
+            config.environment.log_level = "INFO"  # 生产环境不允许 DEBUG
+
+    return config

@@ -244,9 +244,13 @@ async function refreshAll() {
 async function apiFetch(path, options = {}) {
   setRequestStatus("请求中");
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+
+  // API Key（可选）
   const apiKey = elements.apiKey.value.trim();
   if (apiKey) headers["x-api-key"] = apiKey;
+
   const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
+
   const requestId = response.headers.get("x-request-id");
   setRequestStatus(requestId ? `请求 ${requestId.slice(0, 8)}` : "完成");
   const text = await response.text();
@@ -857,9 +861,11 @@ async function uploadRecordingFile(file, durationSeconds) {
   setRequestStatus("上传中");
   try {
     const headers = {};
+    // API Key（可选）
     const apiKey = elements.apiKey.value.trim();
     if (apiKey) headers["x-api-key"] = apiKey;
     const response = await fetch(`${API_BASE}/recordings`, { method: "POST", headers, body: formData });
+
     const requestId = response.headers.get("x-request-id");
     setRequestStatus(requestId ? `请求 ${requestId.slice(0, 8)}` : "完成");
     const text = await response.text();

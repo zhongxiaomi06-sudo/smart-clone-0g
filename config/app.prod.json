@@ -1,0 +1,58 @@
+{
+  "app_name": "智慧分身",
+  "database_path": "data/smart_avatar.db",
+  "skills_dir": "skills",
+  "tools_dir": "tools",
+  "web_dir": "web",
+  "recordings_dir": "data/recordings",
+  "api": {
+    "prefix": "/api/v1",
+    "legacy_prefix_enabled": false
+  },
+  "security": {
+    "api_key_enabled": true,
+    "api_key_env": "SMART_AVATAR_API_KEY",
+    "jwt_secret_env": "SMART_AVATAR_JWT_SECRET",
+    "jwt_expire_minutes": 1440,
+    "cors_origins": [],
+    "max_upload_size_mb": 50,
+    "public_paths": ["/", "/static", "/health", "/api/v1/auth/register", "/api/v1/auth/login"]
+  },
+  "rate_limit": {
+    "enabled": true,
+    "requests_per_minute": 120
+  },
+  "environment": {
+    "environment": "prod",
+    "database_url": null,
+    "backup_dir": "data/backups",
+    "log_level": "INFO"
+  },
+  "model": {
+    "provider": "deepseek",
+    "default_model": "deepseek-chat",
+    "base_url": "https://api.deepseek.com/v1",
+    "api_key_env": "DEEPSEEK_API_KEY",
+    "timeout_seconds": 60
+  },
+  "transcription": {
+    "provider": "dry_run",
+    "model_size": "base",
+    "device": "cpu",
+    "compute_type": "int8",
+    "default_language": "zh",
+    "auto_extract": true,
+    "max_cards_per_recording": 5,
+    "auto_delete_after_days": 30
+  },
+  "embedding": {
+    "provider": "dry_run",
+    "model_name": "BAAI/bge-small-zh-v1.5",
+    "dimension": 256
+  },
+  "privacy": {
+    "require_skill_confirmation": true,
+    "allow_raw_memory_to_tools": false,
+    "audit_all_tool_calls": true
+  }
+}

@@ -8,9 +8,17 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/styles.css" />
+    <style>
+      .nav-footer {
+        margin-top: auto;
+        padding-top: 12px;
+        border-top: 1px solid rgba(250,247,240,0.1);
+      }
+    </style>
   </head>
   <body>
     <a class="skip-link" href="#main">跳到主内容</a>
+
     <div class="app-shell">
       <!-- ===== 侧边栏 · 深墨 ===== -->
       <aside class="sidebar" aria-label="主导航">
@@ -75,6 +83,9 @@
             <input id="api-key" type="password" autocomplete="off" placeholder="可选 · 本地存储" />
             <button id="save-api-key" class="btn-mini" type="button">保存</button>
           </div>
+        </div>
+
+        <div class="nav-footer">
         </div>
       </aside>
 

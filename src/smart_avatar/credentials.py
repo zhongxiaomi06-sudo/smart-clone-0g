@@ -14,7 +14,9 @@ class CredentialService:
         self.store = store
         self.audit = audit
 
-    def create_hash_credential(self, request: CredentialCreateRequest) -> CredentialRecord:
+    def create_hash_credential(
+        self, request: CredentialCreateRequest, user_id: str = "default"
+    ) -> CredentialRecord:
         digest = self._digest(request.payload)
         record = CredentialRecord(
             subject_type=request.subject_type,
@@ -22,7 +24,7 @@ class CredentialService:
             digest=digest,
             metadata=request.metadata,
         )
-        saved = self.store.add_credential(record)
+        saved = self.store.add_credential(record, user_id=user_id)
         self.audit.record(
             "credential.hash",
             f"{saved.subject_type}:{saved.subject_id}",
@@ -31,6 +33,7 @@ class CredentialService:
                 "hash_algorithm": saved.hash_algorithm,
                 "anchor_status": saved.anchor_status,
             },
+            user_id=user_id,
         )
         return saved
 

@@ -13,9 +13,11 @@ class PermissionService:
         target: str,
         scope: list[str],
         expires_at: str | None = None,
+        user_id: str = "default",
     ) -> PermissionGrant:
         return self.store.add_permission(
-            PermissionGrant(target=target, scope=scope, expires_at=expires_at)
+            PermissionGrant(target=target, scope=scope, expires_at=expires_at),
+            user_id=user_id,
         )
 
     def revoke(self, grant_id: str) -> PermissionGrant | None:
