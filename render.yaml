@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: smart-clone
+    runtime: python
+    plan: free
+    buildCommand: "pip install -e ."
+    startCommand: "python -m uvicorn smart_avatar.app:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: SMART_AVATAR_CONFIG
+        value: config/app.dryrun.json
+      - key: PYTHON_VERSION
+        value: "3.11"
+      # 可选:配置后启用真实大模型推理(在 Render Dashboard 中填入)
+      # - key: DEEPSEEK_API_KEY
+      #   sync: false

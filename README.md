@@ -2,6 +2,106 @@
 
 > 将真实生活中的微小片段，提炼成可检索、可对话、可调用的个人记忆仓库，并通过 Skill 与 MCP 接口扩展到不同生活场景。
 
+<p align="left">
+  <img alt="Python" src="https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white">
+  <img alt="FastAPI" src="https://img.shields.io/badge/FastAPI-0.115%2B-009688?logo=fastapi&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-green">
+  <img alt="Privacy" src="https://img.shields.io/badge/Privacy-本地优先-blueviolet">
+</p>
+
+---
+
+## 🚀 快速开始（5 分钟跑通）
+
+### 环境要求
+- Python 3.10+
+- （可选）DeepSeek API Key — 不配置也能以 `dry_run` 模式完整体验框架
+
+### 1. 克隆并安装
+
+```bash
+git clone https://github.com/sunjunjie12323/smart-clone.git
+cd smart-clone
+
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -e .[dev]
+```
+
+### 2. 启动服务
+
+```bash
+# 方式 A:零配置 dry-run 体验(推荐首次体验)
+SMART_AVATAR_CONFIG=config/app.dryrun.json python -m uvicorn smart_avatar.app:app --host 0.0.0.0 --port 8000
+
+# 方式 B:接入真实大模型(完整智能体验)
+export DEEPSEEK_API_KEY=sk-your-key
+python -m uvicorn smart_avatar.app:app --host 0.0.0.0 --port 8000
+```
+
+### 3. 打开 Web 控制台
+
+访问 **http://localhost:8000** ，即可看到「墨韵档案」控制台：
+Chat 中枢 · 录音采集 · 记忆仓库 · 今日故事 · Skill Registry · MCP 工具 · 授权凭证 · 设置 · 审计日志。
+
+API 交互文档见 **http://localhost:8000/docs** （Swagger UI，自动生成）。
+
+### 4. 运行测试
+
+```bash
+python -m pytest tests/ -q        # 22 个用例,覆盖框架/API/商业化
+```
+
+---
+
+## 🐳 一键部署
+
+### Docker（本地 / 任意 VPS）
+
+```bash
+docker build -t smart-clone .
+docker run -d -p 8000:8000 \
+  -e DEEPSEEK_API_KEY=sk-your-key \
+  -v $(pwd)/data:/app/data \
+  --name smart-clone smart-clone
+# 访问 http://localhost:8000
+```
+
+### Render.com（免费云托管,从 GitHub 自动部署）
+
+仓库已内置 `render.yaml`，在 [Render Dashboard](https://dashboard.render.com) → **New +** → **Blueprint** → 连接本仓库即可一键部署。
+详见 [docs/DEPLOY.md](docs/DEPLOY.md)。
+
+---
+
+## 🔌 技术接入方式
+
+| 接入层 | 说明 | 入口 |
+| --- | --- | --- |
+| **REST API** | 记忆/状态/对话/Skill/凭证全量接口 | `/api/v1/*`，文档见 `/docs` |
+| **Web App** | 墨韵档案控制台，覆盖全部功能 | `/` |
+| **Skill 插件** | 新增 `skills/<name>/skill.json` 即插即用，核心代码零改动 | `skills/` |
+| **MCP 工具** | 通过 `tools/<name>/tool.json` 声明外部工具，统一网关调用 | `tools/` |
+| **模型 Provider** | 抽象适配任意 OpenAI 兼容服务（DeepSeek/通义/Moonshot/Ollama） | `config/app.json` |
+
+**示例：发起一次对话**
+
+```bash
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message":"帮我复盘最近让我消耗的事情"}'
+```
+
+**示例：新增一个 Skill**（无需改核心代码）
+
+```bash
+mkdir -p skills/my_skill
+# 编写 skills/my_skill/skill.json(manifest)+ prompt.md(提示词)
+# 重启后 Chat 即可通过触发词自动路由
+```
+
+---
+
 ## 1. 产品定位
 
 智慧分身是一个面向个人的数字记忆与对话 Demo。它不以“替你做决定”为核心，而是帮助你记录、回忆、反思，并通过可插拔 Skill 调用自己的记忆仓库，完成不同场景下的自我管理与创作。
