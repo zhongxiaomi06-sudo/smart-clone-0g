@@ -182,7 +182,7 @@ class ZeroGVerifiableClient:
 
     通过 python-0g SDK 直接调用 Provider,支持 TEE 可验证推理。
     每次响应包含链上 chatID,可用于验证推理完整性与来源。
-    优先选择 0GM-1.0-35B-A3B 自研模型。
+    优先选择配置中 zg_prefer_model 指定的模型(默认 qwen/qwen2.5-omni-7b)。
     """
 
     config: ModelConfig
