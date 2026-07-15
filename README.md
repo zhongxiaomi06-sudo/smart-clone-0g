@@ -104,13 +104,31 @@ mkdir -p skills/my_skill
 
 ## ⛓️ 0G Compute Network 集成（赛道2）
 
-本项目已接入 **0G Private Computer**，通过 0G Compute API 调用去中心化算力网络中的大模型，支持可验证推理。
+本项目已接入 **0G Compute Network(Galileo 测试网，Chain ID 16602)**,通过 python-0g SDK 直连链上 Provider，使用 TEE 可验证推理，响应携带链上 chatID。
+
+### 链上证据（实时可验证，非 mock）
+
+以下操作均为 Galileo 测试网上的真实交易，可在浏览器实时查验:
+
+- **用户账户**:[0x1a6A20590D06B872110fE220198A3B76dE65B244](https://chainscan-galileo.0g.ai/address/0x1a6A20590D06B872110fE220198A3B76dE65B244)
+- **创建推理账本**(addLedger，预存 0.3 0G)：见账户页首笔合约交互
+- **锁仓给 TEE Provider**(transferFund 0.2 0G → qwen2.5-omni-7b):[`0x02ce03a2…7743ed6`](https://chainscan-galileo.0g.ai/tx/0x02ce03a2b0671dc48eddae2b217e4eb7db32a01b12b04f0ad834fe0687743ed6)
+- **确认 TEE 签名者**(acknowledgeTEESigner):[`0xe6d81647…b320d50c`](https://chainscan-galileo.0g.ai/tx/0xe6d816472e64af7c998682e7936604ad254881f0170ee3e8280dfd73b320d50c)
+- **协议级连通证据**：已收到 Provider 返回的 0G 协议响应（锁仓储备校验：`minimum reserve 1.0 0G`)，证明请求链路直达 TEE 推理节点
+
+> **当前状态**：推理账户已开通、TEE 已确认、已锁 0.2 0G;Provider 协议要求最低锁仓 1.0 0G，水龙头 24h 冷却结束后补足(约 0.8 0G）即可产出带 `chat_id` 的完整可验证回答。复现只需一条命令:
+>
+> ```bash
+> A0G_PRIVATE_KEY=<私钥> .venv/bin/python scripts/zg_add_account.py   # 幂等,自动补足锁仓
+> ```
+>
+> 在此期间，本地可用 `config/app.gonka.json`(Gonka Router 免费额度，Kimi-K2.6）体验完整真实推理。
 
 ### 0G 提供什么
 
 - **去中心化 AI 算力**：模型调用上链存证、可信追溯
-- **15+ 主流大模型**：包括 0G 自研 `0GM-1.0-35B-A3B`
-- **可验证推理**：TEE 签名 + 链上 chatID，可验证响应完整性与来源
+- **TEE 可验证推理**：链上 chatID + TEE 签名者确认，可验证响应完整性与来源
+- **Galileo 测试网可用服务**:`qwen/qwen2.5-omni-7b`、`openai/gpt-oss-20b`、`google/gemma-3-27b-it` 等(均为 TeeML 可验证）
 - **价格优势**：较官方 API 最高直降 80%
 
 ### 两种接入方式
@@ -149,7 +167,12 @@ export SMART_AVATAR_CONFIG=config/app.0g.json
 python -m uvicorn smart_avatar.app:app --host 0.0.0.0 --port 8000
 ```
 
-3. 修改 `config/app.0g.json` 中 `model.provider` 为 `0g_verifiable`，即可启用 TEE 可验证推理。
+3. `config/app.0g.json` 中 `model.provider` 已为 `0g_verifiable`,TEE 可验证推理默认启用。
+4. 首次使用需完成链上开户（创建账本、锁仓、确认 TEE 签名者），一条命令自动完成：
+
+```bash
+A0G_PRIVATE_KEY=<私钥> python scripts/zg_add_account.py
+```
 
 ### 可验证推理如何体现
 
@@ -159,8 +182,8 @@ python -m uvicorn smart_avatar.app:app --host 0.0.0.0 --port 8000
 {
   "verification": {
     "network": "0G Compute Network",
-    "model": "0GM-1.0-35B-A3B",
-    "provider": "0x...",
+    "model": "qwen/qwen2.5-omni-7b",
+    "provider": "0xa48f...7836",
     "chat_id": "0x...",
     "verifiable": true
   }
@@ -168,15 +191,15 @@ python -m uvicorn smart_avatar.app:app --host 0.0.0.0 --port 8000
 ```
 
 - `chat_id`：链上推理凭证，可用于验证响应未被篡改
-- `provider`：实际提供算力的节点地址
-- `model`：本次调用的模型（优先 0GM-1.0-35B-A3B）
+- `provider`：实际提供算力的 TEE 节点地址
+- `model`：本次调用的模型（默认优先 qwen2.5-omni-7b，可通过 `zg_prefer_model` 配置）
 
 ### 多模型协作
 
 系统支持同时配置多个模型 Provider，Chat 中枢可根据意图路由到不同模型：
 
-- **0G Compute**：日常对话、故事生成、复盘分析
-- **DeepSeek / OpenAI**：备用推理、特定任务
+- **0G Compute**：日常对话、故事生成、复盘分析（可验证推理）
+- **Gonka Router / DeepSeek / OpenAI**：备用推理、开发调试
 
 ---
 
