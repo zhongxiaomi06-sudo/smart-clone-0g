@@ -22,7 +22,7 @@
 ## 1. 本地运行
 
 ```bash
-git clone https://github.com/sunjunjie12323/smart-clone.git
+git clone https://github.com/zhongxiaomi06-sudo/smart-clone-0g.git
 cd smart-clone
 python -m venv .venv && source .venv/bin/activate
 pip install -e .[dev]
@@ -77,7 +77,7 @@ services:
 
 1. Fork / 使用本仓库（需公开）。
 2. 打开 [Render Dashboard](https://dashboard.render.com) → **New +** → **Blueprint**。
-3. 连接仓库 `sunjunjie12323/smart-clone`，Render 自动识别 `render.yaml`。
+3. 连接仓库 `zhongxiaomi06-sudo/smart-clone-0g`，Render 自动识别 `render.yaml`。
 4. 部署完成后获得公开地址 `https://smart-clone.onrender.com`。
 5. （可选）在 **Environment** 中填 `DEEPSEEK_API_KEY` 并把 `SMART_AVATAR_CONFIG` 改为 `config/app.json` 启用真实推理。
 

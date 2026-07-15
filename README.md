@@ -20,7 +20,7 @@
 ### 1. 克隆并安装
 
 ```bash
-git clone https://github.com/sunjunjie12323/smart-clone.git
+git clone https://github.com/zhongxiaomi06-sudo/smart-clone-0g.git
 cd smart-clone
 
 python -m venv .venv
