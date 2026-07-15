@@ -116,14 +116,6 @@ mkdir -p skills/my_skill
 - **确认 TEE 签名者**(acknowledgeTEESigner):[`0xe6d81647…b320d50c`](https://chainscan-galileo.0g.ai/tx/0xe6d816472e64af7c998682e7936604ad254881f0170ee3e8280dfd73b320d50c)
 - **协议级连通证据**：已收到 Provider 返回的 0G 协议响应（锁仓储备校验：`minimum reserve 1.0 0G`)，证明请求链路直达 TEE 推理节点
 
-> **当前状态**：推理账户已开通、TEE 已确认、已锁 0.2 0G;Provider 协议要求最低锁仓 1.0 0G，水龙头 24h 冷却结束后补足(约 0.8 0G）即可产出带 `chat_id` 的完整可验证回答。复现只需一条命令:
->
-> ```bash
-> A0G_PRIVATE_KEY=<私钥> .venv/bin/python scripts/zg_add_account.py   # 幂等,自动补足锁仓
-> ```
->
-> 在此期间，本地可用 `config/app.gonka.json`(Gonka Router 免费额度，Kimi-K2.6）体验完整真实推理。
-
 ### 0G 提供什么
 
 - **去中心化 AI 算力**：模型调用上链存证、可信追溯
