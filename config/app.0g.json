@@ -29,7 +29,7 @@
     "log_level": "INFO"
   },
   "model": {
-    "provider": "0g",
+    "provider": "0g_verifiable",
     "default_model": "0GM-1.0-35B-A3B",
     "base_url": "https://router-api.0g.ai/v1",
     "api_key_env": "ZG_ROUTER_API_KEY",

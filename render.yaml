@@ -3,15 +3,18 @@ services:
     name: smart-clone
     runtime: python
     plan: free
-    buildCommand: "pip install -e ."
+    buildCommand: "pip install -e \".[zg]\""
     startCommand: "sh -c 'python -m uvicorn smart_avatar.app:app --host 0.0.0.0 --port $PORT'"
     healthCheckPath: /health
     autoDeploy: true
     envVars:
       - key: SMART_AVATAR_CONFIG
-        value: config/app.dryrun.json
+        value: config/app.0g.json
       - key: PYTHON_VERSION
         value: "3.11"
-      # 可选:配置后启用真实大模型推理(在 Render Dashboard 中填入)
-      # - key: DEEPSEEK_API_KEY
-      #   sync: false
+      # 0G Compute Network 可验证推理(方案 B)
+      - key: A0G_RPC_URL
+        value: "https://evmrpc-testnet.0g.ai"
+      # 测试网钱包私钥(去掉 0x 前缀),在 Render Dashboard 中填入,永不进 git
+      - key: A0G_PRIVATE_KEY
+        sync: false
