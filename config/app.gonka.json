@@ -1,0 +1,58 @@
+{
+  "app_name": "智慧分身",
+  "database_path": "data/smart_avatar.db",
+  "skills_dir": "skills",
+  "tools_dir": "tools",
+  "web_dir": "web",
+  "recordings_dir": "data/recordings",
+  "api": {
+    "prefix": "/api/v1",
+    "legacy_prefix_enabled": true
+  },
+  "security": {
+    "api_key_enabled": false,
+    "api_key_env": "SMART_AVATAR_API_KEY",
+    "jwt_secret_env": "SMART_AVATAR_JWT_SECRET",
+    "jwt_expire_minutes": 1440,
+    "cors_origins": [],
+    "max_upload_size_mb": 50,
+    "public_paths": ["/", "/static", "/health", "/docs", "/openapi.json"]
+  },
+  "rate_limit": {
+    "enabled": true,
+    "requests_per_minute": 120
+  },
+  "environment": {
+    "environment": "dev",
+    "database_url": null,
+    "backup_dir": "data/backups",
+    "log_level": "INFO"
+  },
+  "model": {
+    "provider": "openai_compatible",
+    "default_model": "moonshotai/Kimi-K2.6",
+    "base_url": "https://api.gonkarouter.io/v1",
+    "api_key_env": "GONKA_API_KEY",
+    "timeout_seconds": 120
+  },
+  "transcription": {
+    "provider": "dry_run",
+    "model_size": "base",
+    "device": "cpu",
+    "compute_type": "int8",
+    "default_language": "zh",
+    "auto_extract": true,
+    "max_cards_per_recording": 5,
+    "auto_delete_after_days": null
+  },
+  "embedding": {
+    "provider": "dry_run",
+    "model_name": "",
+    "dimension": 256
+  },
+  "privacy": {
+    "require_skill_confirmation": false,
+    "allow_raw_memory_to_tools": false,
+    "audit_all_tool_calls": true
+  }
+}
