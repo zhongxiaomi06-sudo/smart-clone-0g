@@ -114,7 +114,6 @@ mkdir -p skills/my_skill
 - **创建推理账本**(addLedger，预存 0.3 0G)：见账户页首笔合约交互
 - **锁仓给 TEE Provider**(transferFund 0.2 0G → qwen2.5-omni-7b):[`0x02ce03a2…7743ed6`](https://chainscan-galileo.0g.ai/tx/0x02ce03a2b0671dc48eddae2b217e4eb7db32a01b12b04f0ad834fe0687743ed6)
 - **确认 TEE 签名者**(acknowledgeTEESigner):[`0xe6d81647…b320d50c`](https://chainscan-galileo.0g.ai/tx/0xe6d816472e64af7c998682e7936604ad254881f0170ee3e8280dfd73b320d50c)
-- **协议级连通证据**：已收到 Provider 返回的 0G 协议响应（锁仓储备校验：`minimum reserve 1.0 0G`)，证明请求链路直达 TEE 推理节点
 
 ### 0G 提供什么
 
