@@ -4,7 +4,7 @@ import json
 import re
 
 from .audit import AuditService
-from .domain import ChatRequest, ChatResponse, Citation, MemoryQuery, SkillRunRequest
+from .domain import ChatRequest, ChatResponse, Citation, MemoryQuery, SkillRunRequest, VerificationInfo
 from .models import ModelClient
 from .skills import SkillRegistry
 from .storage import SQLiteStore
@@ -151,11 +151,22 @@ class ChatOrchestrator:
                 answer=f"未找到 Skill:{skill_name}。请检查 Skill 是否已注册。",
                 citations=[],
             )
+        verification = None
+        if result.result and result.result.get("verification"):
+            v = result.result["verification"]
+            verification = VerificationInfo(
+                network=v.get("network", "0G Compute Network"),
+                model=v.get("model"),
+                provider=v.get("provider"),
+                chat_id=v.get("chat_id"),
+                verifiable=v.get("verifiable", True),
+            )
         return ChatResponse(
             action="skill_run",
             answer=result.result.get("model_output", f"已调用 Skill:{skill_name}"),
             citations=result.used_context,
             skill_result=result,
+            verification=verification,
         )
 
     def _memory_answer(self, request: ChatRequest, user_id: str = "default") -> ChatResponse:
@@ -184,10 +195,26 @@ class ChatOrchestrator:
         if self.model_client and not self._is_dry_run():
             memory_context = self._format_memory_context(memories)
             try:
-                answer = self.model_client.generate(
-                    system_prompt=_RECALL_SYSTEM_PROMPT,
-                    user_prompt=f"用户问题:{request.message}\n\n可用记忆卡片:\n{memory_context}",
-                )
+                # 0G 可验证推理客户端:返回内容 + 链上证明
+                if hasattr(self.model_client, "generate_with_proof"):
+                    proof_result = self.model_client.generate_with_proof(
+                        system_prompt=_RECALL_SYSTEM_PROMPT,
+                        user_prompt=f"用户问题:{request.message}\n\n可用记忆卡片:\n{memory_context}",
+                    )
+                    answer = proof_result["content"]
+                    verification = VerificationInfo(
+                        network=proof_result.get("network", "0G Compute Network"),
+                        model=proof_result.get("model"),
+                        provider=proof_result.get("provider"),
+                        chat_id=proof_result.get("chat_id"),
+                        verifiable=proof_result.get("verifiable", True),
+                    )
+                else:
+                    answer = self.model_client.generate(
+                        system_prompt=_RECALL_SYSTEM_PROMPT,
+                        user_prompt=f"用户问题:{request.message}\n\n可用记忆卡片:\n{memory_context}",
+                    )
+                    verification = None
             except Exception as exc:  # noqa: BLE001
                 # 模型调用失败:返回明确的错误,不降级到 dry-run 占位文本
                 self.audit.record(
@@ -207,11 +234,13 @@ class ChatOrchestrator:
         else:
             # dry-run 模式:结构化展示记忆线索
             answer = self._format_dry_run_answer(request.message, memories)
+            verification = None
 
         return ChatResponse(
             action="memory_answer",
             answer=answer,
             citations=citations,
+            verification=verification,
         )
 
     def _format_memory_context(self, memories: list) -> str:

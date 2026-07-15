@@ -132,11 +132,23 @@ class ChatRequest(BaseModel):
     limit: int = 8
 
 
+class VerificationInfo(BaseModel):
+    """0G Compute Network 可验证推理元数据。"""
+
+    network: str = "0G Compute Network"
+    model: str | None = None
+    provider: str | None = None
+    chat_id: str | None = None
+    verifiable: bool = False
+    proof_url: str | None = None
+
+
 class ChatResponse(BaseModel):
     action: Literal["memory_answer", "skill_run", "permission_required", "clarify"]
     answer: str
     citations: list[Citation] = Field(default_factory=list)
     skill_result: SkillRunResult | None = None
+    verification: VerificationInfo | None = None
 
 
 class ToolCallRequest(BaseModel):

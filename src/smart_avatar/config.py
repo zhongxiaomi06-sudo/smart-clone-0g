@@ -13,6 +13,10 @@ class ModelConfig(BaseModel):
     base_url: str | None = None
     api_key_env: str | None = None
     timeout_seconds: int = 60
+    # 0G Compute Network 扩展字段
+    zg_rpc_url_env: str | None = None  # A0G_RPC_URL
+    zg_private_key_env: str | None = None  # A0G_PRIVATE_KEY
+    zg_prefer_model: str | None = None  # 优先模型名,如 0GM-1.0-35B-A3B
 
 
 class TranscriptionConfig(BaseModel):

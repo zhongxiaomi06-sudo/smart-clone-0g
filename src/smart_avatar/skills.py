@@ -100,10 +100,26 @@ class SkillRegistry:
         prompt = self._render_prompt(manifest, request, memories)
         # 调用模型生成输出，捕获异常以便记录审计与日志
         try:
-            model_output = self.model_client.generate(
-                system_prompt=manifest.description,
-                user_prompt=prompt,
-            )
+            # 0G 可验证推理客户端:返回内容 + 链上证明
+            if hasattr(self.model_client, "generate_with_proof"):
+                proof_result = self.model_client.generate_with_proof(
+                    system_prompt=manifest.description,
+                    user_prompt=prompt,
+                )
+                model_output = proof_result["content"]
+                verification_meta = {
+                    "network": proof_result.get("network", "0G Compute Network"),
+                    "model": proof_result.get("model"),
+                    "provider": proof_result.get("provider"),
+                    "chat_id": proof_result.get("chat_id"),
+                    "verifiable": proof_result.get("verifiable", True),
+                }
+            else:
+                model_output = self.model_client.generate(
+                    system_prompt=manifest.description,
+                    user_prompt=prompt,
+                )
+                verification_meta = None
         except Exception as exc:
             logger.error(
                 "skill.model_error",
@@ -142,6 +158,7 @@ class SkillRegistry:
                 "model_output": model_output,
                 "prepared_prompt": prompt,
                 "output_schema": manifest.output_schema,
+                "verification": verification_meta,
             },
             used_context=citations,
             audit_id=audit.id,

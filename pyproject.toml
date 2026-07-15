@@ -28,6 +28,7 @@ embedding = [
 ]
 postgresql = ["asyncpg>=0.29.0"]
 redis = ["redis>=5.0.0"]
+zg = ["python-0g>=0.1.0"]
 
 [tool.ruff]
 line-length = 100

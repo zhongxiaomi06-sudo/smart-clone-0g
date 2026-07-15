@@ -102,6 +102,84 @@ mkdir -p skills/my_skill
 
 ---
 
+## ⛓️ 0G Compute Network 集成（赛道2）
+
+本项目已接入 **0G Private Computer**，通过 0G Compute API 调用去中心化算力网络中的大模型，支持可验证推理。
+
+### 0G 提供什么
+
+- **去中心化 AI 算力**：模型调用上链存证、可信追溯
+- **15+ 主流大模型**：包括 0G 自研 `0GM-1.0-35B-A3B`
+- **可验证推理**：TEE 签名 + 链上 chatID，可验证响应完整性与来源
+- **价格优势**：较官方 API 最高直降 80%
+
+### 两种接入方式
+
+| 方式 | 适用场景 | 可验证推理 | 配置 |
+| --- | --- | --- | --- |
+| **Router API** | 快速接入、Serverless | ❌（走网关） | `ZG_ROUTER_API_KEY` |
+| **SDK 直连** | 完整特性、Hackathon 加分 | ✅（TEE + chatID） | `A0G_PRIVATE_KEY` + `A0G_RPC_URL` |
+
+### 快速接入（Router API）
+
+1. 打开 [pc.0g.ai](https://pc.0g.ai)，连接钱包并充值 0G token
+2. 创建 API Key
+3. 配置环境变量：
+
+```bash
+export ZG_ROUTER_API_KEY=your-router-api-key
+export SMART_AVATAR_CONFIG=config/app.0g.json
+python -m uvicorn smart_avatar.app:app --host 0.0.0.0 --port 8000
+```
+
+### 完整接入（SDK 直连，支持可验证推理）
+
+1. 安装 0G SDK：
+
+```bash
+pip install -e .[zg]
+```
+
+2. 配置 EVM 私钥与 RPC：
+
+```bash
+export A0G_PRIVATE_KEY=your-evm-private-key  # 无 0x 前缀
+export A0G_RPC_URL=https://evmrpc-testnet.0g.ai
+export SMART_AVATAR_CONFIG=config/app.0g.json
+python -m uvicorn smart_avatar.app:app --host 0.0.0.0 --port 8000
+```
+
+3. 修改 `config/app.0g.json` 中 `model.provider` 为 `0g_verifiable`，即可启用 TEE 可验证推理。
+
+### 可验证推理如何体现
+
+每次通过 0G SDK 发起的对话，响应中都会携带：
+
+```json
+{
+  "verification": {
+    "network": "0G Compute Network",
+    "model": "0GM-1.0-35B-A3B",
+    "provider": "0x...",
+    "chat_id": "0x...",
+    "verifiable": true
+  }
+}
+```
+
+- `chat_id`：链上推理凭证，可用于验证响应未被篡改
+- `provider`：实际提供算力的节点地址
+- `model`：本次调用的模型（优先 0GM-1.0-35B-A3B）
+
+### 多模型协作
+
+系统支持同时配置多个模型 Provider，Chat 中枢可根据意图路由到不同模型：
+
+- **0G Compute**：日常对话、故事生成、复盘分析
+- **DeepSeek / OpenAI**：备用推理、特定任务
+
+---
+
 ## 1. 产品定位
 
 智慧分身是一个面向个人的数字记忆与对话 Demo。它不以“替你做决定”为核心，而是帮助你记录、回忆、反思，并通过可插拔 Skill 调用自己的记忆仓库，完成不同场景下的自我管理与创作。
