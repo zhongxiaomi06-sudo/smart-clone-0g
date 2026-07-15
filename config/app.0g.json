@@ -36,7 +36,7 @@
     "timeout_seconds": 120,
     "zg_rpc_url_env": "A0G_RPC_URL",
     "zg_private_key_env": "A0G_PRIVATE_KEY",
-    "zg_prefer_model": "0GM-1.0-35B-A3B"
+    "zg_prefer_model": "qwen/qwen2.5-omni-7b"
   },
   "transcription": {
     "provider": "dry_run",

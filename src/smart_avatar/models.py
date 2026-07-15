@@ -196,15 +196,19 @@ class ZeroGVerifiableClient:
                 raise RuntimeError(
                     "python-0g 未安装。请执行 pip install python-0g 安装 0G SDK。"
                 ) from exc
-            self._a0g_client = A0G()
+            self._a0g_client = A0G(network=self.config.zg_network or "testnet")
         return self._a0g_client
 
     def _select_service(self, services: list[Any]) -> Any:
-        """优先选择 0GM-1.0-35B-A3B,否则回退到第一个可用服务。"""
-        prefer = (self.config.zg_prefer_model or "0GM-1.0-35B-A3B").lower()
+        """优先选择配置的模型,否则回退到第一个非图像类可用服务。"""
+        prefer = (self.config.zg_prefer_model or "qwen/qwen2.5-omni-7b").lower()
         for svc in services:
             model_name = getattr(svc, "model", "") or ""
             if prefer in model_name.lower():
+                return svc
+        for svc in services:
+            model_name = (getattr(svc, "model", "") or "").lower()
+            if "image" not in model_name:
                 return svc
         if services:
             return services[0]

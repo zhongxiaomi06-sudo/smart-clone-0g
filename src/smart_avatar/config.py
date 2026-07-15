@@ -17,6 +17,7 @@ class ModelConfig(BaseModel):
     zg_rpc_url_env: str | None = None  # A0G_RPC_URL
     zg_private_key_env: str | None = None  # A0G_PRIVATE_KEY
     zg_prefer_model: str | None = None  # 优先模型名,如 0GM-1.0-35B-A3B
+    zg_network: str = "testnet"  # 0G 网络:testnet / mainnet
 
 
 class TranscriptionConfig(BaseModel):
