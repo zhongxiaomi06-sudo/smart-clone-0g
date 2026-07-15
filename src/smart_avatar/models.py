@@ -83,6 +83,9 @@ class OpenAICompatibleClient:
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self.api_key}",
+                # 部分服务商前置 Cloudflare(如 Gonka Router),
+                # 默认 Python-urllib UA 会触发 403(1010),显式声明 UA 规避
+                "User-Agent": "smart-avatar/0.1 (+https://github.com/zhongxiaomi06-sudo/smart-clone-0g)",
             },
             method="POST",
         )
@@ -150,6 +153,9 @@ class ZeroGRouterClient:
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {self.api_key}",
+                # 部分服务商前置 Cloudflare(如 Gonka Router),
+                # 默认 Python-urllib UA 会触发 403(1010),显式声明 UA 规避
+                "User-Agent": "smart-avatar/0.1 (+https://github.com/zhongxiaomi06-sudo/smart-clone-0g)",
             },
             method="POST",
         )
