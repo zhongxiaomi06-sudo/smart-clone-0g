@@ -3,24 +3,39 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>智慧分身 · Memory OS</title>
+    <title>智慧分身 · Life OS</title>
+    <script>
+      /* 主题:本地优先,避免闪烁 */
+      (function () {
+        try {
+          var saved = localStorage.getItem("smart-avatar-theme");
+          if (saved) {
+            document.documentElement.dataset.theme = saved;
+          } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            document.documentElement.dataset.theme = "dark";
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Noto+Serif+SC:wght@600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&family=Noto+Serif+SC:wght@600;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/tokens.css" />
     <link rel="stylesheet" href="/static/styles.css" />
-    <style>
-      .nav-footer {
-        margin-top: auto;
-        padding-top: 12px;
-        border-top: 1px solid rgba(250,247,240,0.1);
-      }
-    </style>
   </head>
   <body>
     <a class="skip-link" href="#main">跳到主内容</a>
 
+    <!-- 午后阳光画布 · 躺在留白里 -->
+    <canvas id="sunlight" class="sunlight" aria-hidden="true"></canvas>
+    <!-- 胶片颗粒 -->
+    <div class="grain" aria-hidden="true"></div>
+    <!-- 软点光标 -->
+    <div id="cursor-dot" class="cursor-dot" aria-hidden="true" hidden></div>
+
     <div class="app-shell">
-      <!-- ===== 侧边栏 · 深墨 ===== -->
+      <!-- ===== 侧边栏 · 暖纸 ===== -->
       <aside class="sidebar" aria-label="主导航">
         <div class="brand">
           <div class="brand-glyph" aria-hidden="true">
@@ -33,7 +48,7 @@
           </div>
           <div class="brand-text">
             <h1>智慧分身</h1>
-            <p>Memory OS</p>
+            <p>Life OS</p>
           </div>
         </div>
 
@@ -56,7 +71,7 @@
             <span class="nav-label">今日故事</span>
           </button>
           <button class="nav-item" data-tab="skills" type="button">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.085.706 1.698v.014c0 .613-.236 1.228-.706 1.698l-1.611 1.611a.984.984 0 0 1-.837.289c-.322-.049-.648.059-.878.289l-1.568 1.568c-.47.47-1.228.47-1.698 0l-1.568-1.568a1.001 1.001 0 0 0-.878-.289c-.322.049-.648-.059-.878-.289l-1.568-1.568c-.47-.47-.47-1.229 0-1.698l1.568-1.568c.23-.23.338-.556.289-.878-.049-.322.059-.648.289-.878l1.611-1.611c.47-.47 1.228-.47 1.698 0l1.568 1.568c.23.23.556.338.878.289z"/></svg>
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.085.706 1.698v.014c0 .613-.236 1.228-.706 1.698l-1.611 1.611a.984.984 0 0 1-.837.289c-.322-.049-.648.059-.878.289l-1.568 1.568c-.47.47-1.228.47-1.698 0l-1.568-1.568a1.001 1.001 0 0 0-.878-.289c-.322.049-.648-.059-.878-.289l-1.568-1.568c-.47-.47-.47-1.229 0-1.698l1.568-1.568c.23-.23.338-.556.289-.878c-.049-.322.059-.648.289-.878l1.611-1.611c.47-.47 1.228-.47 1.698 0l1.568 1.568c.23.23.556.338.878.289z"/></svg>
             <span class="nav-label">Skill Registry</span>
           </button>
           <button class="nav-item" data-tab="tools" type="button">
@@ -68,7 +83,7 @@
             <span class="nav-label">授权与凭证</span>
           </button>
           <button class="nav-item" data-tab="settings" type="button">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1-1.51H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82.33l.06.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             <span class="nav-label">设置</span>
           </button>
           <button class="nav-item" data-tab="audit" type="button">
@@ -85,7 +100,9 @@
           </div>
         </div>
 
+        <!-- 黑客位之叁 · 页脚状态行 -->
         <div class="nav-footer">
+          <p class="status-line" id="status-line">LOCAL --:-- · BUILT 2026-07 · v1.4</p>
         </div>
       </aside>
 
@@ -93,7 +110,7 @@
       <main id="main" class="workspace">
         <header class="topbar">
           <div class="topbar-left">
-            <span class="topbar-index" id="view-index">01</span>
+            <span class="topbar-index" id="view-index">之壹</span>
             <div class="topbar-title-block">
               <h2 id="view-title">Chat 中枢</h2>
               <p class="topbar-sub" id="view-sub">本地优先 · 记忆检索 · Skill 调度</p>
@@ -102,6 +119,15 @@
           <div class="topbar-right">
             <span id="health-status" class="status-dot" data-state="pending">检查中</span>
             <span id="request-status" class="status-chip">就绪</span>
+            <button id="cmdk-open" class="icon-btn cmdk-kbd" type="button" aria-label="打开命令面板" title="命令面板 (⌘K)">⌘K</button>
+            <button id="sound-toggle" class="icon-btn" type="button" aria-label="切换音效" title="音效开关">
+              <svg class="icon-sound-on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+              <svg class="icon-sound-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" hidden><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+            </button>
+            <button id="theme-toggle" class="icon-btn" type="button" aria-label="切换主题" title="日间 / 夜晚台灯">
+              <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+              <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" hidden><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            </button>
           </div>
         </header>
 
@@ -201,6 +227,25 @@
 
         <!-- ===== 记忆 ===== -->
         <section id="tab-memories" class="tab-panel" aria-labelledby="view-title">
+          <!-- 黑客位之贰 · 一年的日常 -->
+          <section class="card heatmap-card">
+            <div class="card-head">
+              <h3>一年的日常</h3>
+              <span class="card-hint">记忆与录音的密度，像阳光落在日历上</span>
+            </div>
+            <div class="heatmap-body">
+              <div id="heatmap" class="heatmap" role="img" aria-label="最近一年的记忆活动热力图"></div>
+              <div class="heatmap-foot">
+                <span class="heatmap-note" id="heatmap-note">—</span>
+                <span class="heatmap-legend" aria-hidden="true">
+                  <span class="heatmap-legend-label">少</span>
+                  <i data-level="0"></i><i data-level="1"></i><i data-level="2"></i><i data-level="3"></i><i data-level="4"></i>
+                  <span class="heatmap-legend-label">多</span>
+                </span>
+              </div>
+            </div>
+          </section>
+
           <div class="grid grid-2">
             <section class="card">
               <div class="card-head">
@@ -431,6 +476,33 @@
           </div>
         </section>
       </main>
+    </div>
+
+    <!-- 黑客位之壹 · ⌘K 命令面板(全站唯一终端) -->
+    <div id="cmdk" class="cmdk" hidden>
+      <div class="cmdk-backdrop" data-cmdk-close></div>
+      <div class="cmdk-panel" role="dialog" aria-modal="true" aria-label="命令面板">
+        <div class="cmdk-input-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+          <input id="cmdk-input" type="text" placeholder="输入命令或搜索…" autocomplete="off" spellcheck="false" />
+          <kbd>ESC</kbd>
+        </div>
+        <ul id="cmdk-list" class="cmdk-list" role="listbox"></ul>
+        <div class="cmdk-foot">
+          <span>↑↓ 导航</span>
+          <span>↵ 执行</span>
+          <span class="cmdk-foot-right">LIFE OS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 黑客位之肆 · 调试面板(按 ` 开合) -->
+    <div id="debug-panel" class="debug-panel" hidden>
+      <div class="debug-head">
+        <span>DEBUG</span>
+        <button id="debug-close" type="button" aria-label="关闭调试面板">×</button>
+      </div>
+      <pre id="debug-content">—</pre>
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>

@@ -1,9 +1,12 @@
 /* ============================================================
    智慧分身 · 前端交互层
-   保持原生架构 · GSAP 动效 · 墨韵档案设计系统
+   保持原生架构 · GSAP 动效 · 午后工作室设计系统
+   音效:WebAudio 实时合成,零音频资产
    ============================================================ */
 
 const API_BASE = "/api/v1";
+const APP_VERSION = "v1.4";
+const APP_BUILT = "2026-07";
 
 const state = {
   skills: [],
@@ -11,15 +14,15 @@ const state = {
 };
 
 const titles = {
-  chat: { title: "Chat 中枢", sub: "本地优先 · 记忆检索 · Skill 调度", index: "01" },
-  recordings: { title: "录音采集", sub: "原始音频仅本地 · 自动转写与提炼", index: "02" },
-  memories: { title: "记忆仓库", sub: "脱敏结构化卡片 · 按时间倒序", index: "03" },
-  story: { title: "今日故事", sub: "真实锚点 + 文学虚构 · 基于今日记忆", index: "04" },
-  skills: { title: "Skill Registry", sub: "场景能力配置接入 · 不写进核心代码", index: "05" },
-  tools: { title: "MCP 工具", sub: "默认关闭 · 需权限与审计策略", index: "06" },
-  trust: { title: "授权与凭证", sub: "Token 授权 · 本地哈希凭证", index: "07" },
-  settings: { title: "设置", sub: "隐私策略 · 模型配置 · 数据管理", index: "08" },
-  audit: { title: "审计日志", sub: "记忆 · Skill · 工具 · 权限 · 凭证", index: "09" },
+  chat: { title: "Chat 中枢", sub: "本地优先 · 记忆检索 · Skill 调度", index: "之壹" },
+  recordings: { title: "录音采集", sub: "原始音频仅本地 · 自动转写与提炼", index: "之贰" },
+  memories: { title: "记忆仓库", sub: "脱敏结构化卡片 · 按时间倒序", index: "之叁" },
+  story: { title: "今日故事", sub: "真实锚点 + 文学虚构 · 基于今日记忆", index: "之肆" },
+  skills: { title: "Skill Registry", sub: "场景能力配置接入 · 不写进核心代码", index: "之伍" },
+  tools: { title: "MCP 工具", sub: "默认关闭 · 需权限与审计策略", index: "之陆" },
+  trust: { title: "授权与凭证", sub: "Token 授权 · 本地哈希凭证", index: "之柒" },
+  settings: { title: "设置", sub: "隐私策略 · 模型配置 · 数据管理", index: "之捌" },
+  audit: { title: "审计日志", sub: "记忆 · Skill · 工具 · 权限 · 凭证", index: "之玖" },
 };
 
 /* ===== GSAP 动效模块 ===== */
@@ -138,10 +141,20 @@ const recorder = {
 
 document.addEventListener("DOMContentLoaded", () => {
   cacheElements();
+  titles.chat.sub = `${greeting()}，先检索记忆，再按需调用 Skill`;
+  elements.viewSub.textContent = titles.chat.sub;
   bindNavigation();
   bindForms();
   restoreApiKey();
   initHoverInteractions();
+  SoundFX.init();
+  ThemeStore.init();
+  Sunlight.init();
+  CursorDot.init();
+  StatusLine.init();
+  CmdK.init();
+  DebugPanel.init();
+  Heatmap.init();
   refreshAll();
 });
 
@@ -167,28 +180,45 @@ function cacheElements() {
 
 function bindNavigation() {
   document.querySelectorAll(".nav-item").forEach((button) => {
-    button.addEventListener("click", () => {
-      const tab = button.dataset.tab;
-      const currentPanel = document.querySelector(".tab-panel.is-active");
-      const targetPanel = document.querySelector(`#tab-${tab}`);
-      if (currentPanel === targetPanel) return;
-
-      document.querySelectorAll(".nav-item").forEach((item) => {
-        item.classList.toggle("is-active", item === button);
-      });
-
-      const info = titles[tab] || { title: "智慧分身", sub: "", index: "—" };
-      elements.viewTitle.textContent = info.title;
-      elements.viewSub.textContent = info.sub;
-      elements.viewIndex.textContent = info.index;
-
-      gsapAnim.navActivate(button);
-      gsapAnim.panelTransition(currentPanel, targetPanel);
-
-      if (tab === "audit") loadAudit();
-      if (tab === "recordings") loadRecordings();
-    });
+    button.addEventListener("click", () => activateTab(button.dataset.tab));
   });
+}
+
+/* 切换页签:导航点击与 ⌘K 共用 */
+function activateTab(tab) {
+  const button = document.querySelector(`.nav-item[data-tab="${tab}"]`);
+  const currentPanel = document.querySelector(".tab-panel.is-active");
+  const targetPanel = document.querySelector(`#tab-${tab}`);
+  if (!button || !targetPanel || currentPanel === targetPanel) return;
+
+  document.querySelectorAll(".nav-item").forEach((item) => {
+    item.classList.toggle("is-active", item === button);
+  });
+
+  const info = titles[tab] || { title: "智慧分身", sub: "", index: "—" };
+  elements.viewTitle.textContent = info.title;
+  elements.viewSub.textContent = info.sub;
+  elements.viewIndex.textContent = info.index;
+
+  SoundFX.play("swish"); /* 页面转化 · 翻纸声 */
+  gsapAnim.navActivate(button);
+  gsapAnim.panelTransition(currentPanel, targetPanel);
+
+  if (tab === "audit") loadAudit();
+  if (tab === "recordings") loadRecordings();
+  if (tab === "memories") Heatmap.refresh();
+}
+
+/* 时间感知问候 */
+function greeting() {
+  const h = new Date().getHours();
+  if (h < 5) return "夜深了";
+  if (h < 9) return "早上好";
+  if (h < 12) return "上午好";
+  if (h < 14) return "中午好";
+  if (h < 18) return "下午好";
+  if (h < 23) return "晚上好";
+  return "夜深了";
 }
 
 function initHoverInteractions() {
@@ -241,6 +271,8 @@ async function refreshAll() {
 }
 
 /* ===== API ===== */
+const stats = { requests: 0, lastRequestId: "", healthMs: null, startedAt: Date.now() };
+
 async function apiFetch(path, options = {}) {
   setRequestStatus("请求中");
   const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
@@ -252,6 +284,8 @@ async function apiFetch(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
 
   const requestId = response.headers.get("x-request-id");
+  stats.requests += 1;
+  if (requestId) stats.lastRequestId = requestId.slice(0, 8);
   setRequestStatus(requestId ? `请求 ${requestId.slice(0, 8)}` : "完成");
   const text = await response.text();
   const data = text ? JSON.parse(text) : null;
@@ -264,8 +298,10 @@ async function apiFetch(path, options = {}) {
 
 async function loadHealth() {
   try {
+    const t0 = performance.now();
     const response = await fetch("/health");
     const data = await response.json();
+    stats.healthMs = Math.round(performance.now() - t0);
     const ok = data.status === "ok";
     elements.healthStatus.textContent = ok ? "服务正常" : "服务异常";
     elements.healthStatus.dataset.state = ok ? "ok" : "error";
@@ -356,6 +392,7 @@ async function submitChat(event) {
     const data = await apiFetch("/chat", { method: "POST", body: JSON.stringify(payload) });
     renderChatResult(data);
     gsapAnim.resultFadeIn(document.querySelector("#chat-result"));
+    SoundFX.play("chime");
     await Promise.allSettled([loadAudit(), loadCredentials()]);
   } catch (error) {
     renderText("#chat-result", error.message, true);
@@ -1002,6 +1039,7 @@ async function submitStory(event) {
     const data = await apiFetch("/skills/daily_story/run", { method: "POST", body: JSON.stringify(payload) });
     renderStoryResult(data);
     gsapAnim.resultFadeIn(resultBox);
+    SoundFX.play("chime");
     await loadAudit();
   } catch (error) {
     resultBox.innerHTML = `<p style="color: var(--rose)">${escapeHtml(error.message)}</p>`;
@@ -1113,4 +1151,617 @@ async function clearAllMemories() {
   } catch (error) {
     showToast(error.message);
   }
+}
+
+/* ============================================================
+   音效系统 · WebAudio 实时合成(零音频资产)
+   规则:首个 gesture 前静默 / hover 节流 200ms /
+        prefers-reduced-motion = 全局静音 / 开关存 localStorage
+   ============================================================ */
+const SoundFX = {
+  ctx: null,
+  enabled: true,
+  reduced: false,
+  lastHoverAt: 0,
+  _lastHoverEl: null,
+  _noiseBuf: null,
+
+  init() {
+    this.reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    try {
+      this.enabled = localStorage.getItem("smart-avatar-sound") !== "off";
+    } catch (e) {}
+    this.toggleBtn = document.querySelector("#sound-toggle");
+    this.toggleBtn?.addEventListener("click", () => this.toggle());
+    this.updateIcon();
+
+    /* 卡片 hover · 木质轻扣(节流 200ms) */
+    document.addEventListener("mouseover", (event) => {
+      if (!this.enabled || this.reduced) return;
+      const now = performance.now();
+      if (now - this.lastHoverAt < 200) return;
+      const hit = event.target.closest(".btn, .list-item, .heatmap-cell, .cmdk-item, .rec-btn");
+      if (!hit || hit === this._lastHoverEl) return;
+      this._lastHoverEl = hit;
+      this.lastHoverAt = now;
+      this.play("hover");
+    });
+
+    /* 点击 · 软橡胶 tap(页签切换走 swish,不叠加) */
+    document.addEventListener("click", (event) => {
+      if (!this.enabled || this.reduced) return;
+      if (event.target.closest(".nav-item, #sound-toggle, #theme-toggle, #cmdk-open")) return;
+      if (event.target.closest(".btn, .btn-mini")) this.play("tap");
+    });
+  },
+
+  toggle() {
+    this.enabled = !this.enabled;
+    try {
+      localStorage.setItem("smart-avatar-sound", this.enabled ? "on" : "off");
+    } catch (e) {}
+    this.updateIcon();
+    if (this.enabled) this.play("theme"); /* 按下即试听 */
+  },
+
+  updateIcon() {
+    if (!this.toggleBtn) return;
+    const on = this.enabled && !this.reduced;
+    this.toggleBtn.querySelector(".icon-sound-on").hidden = !on;
+    this.toggleBtn.querySelector(".icon-sound-off").hidden = on;
+  },
+
+  ensureCtx() {
+    if (!this.ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      this.ctx = new AC();
+    }
+    if (this.ctx.state === "suspended") this.ctx.resume();
+    return this.ctx;
+  },
+
+  play(name) {
+    if (!this.enabled || this.reduced) return;
+    const ctx = this.ensureCtx();
+    if (!ctx) return;
+    const recipe = this.recipes[name];
+    if (recipe) recipe.call(this, ctx);
+  },
+
+  _noiseBuffer(ctx) {
+    if (this._noiseBuf) return this._noiseBuf;
+    const len = ctx.sampleRate;
+    const buffer = ctx.createBuffer(1, len, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    this._noiseBuf = buffer;
+    return buffer;
+  },
+
+  _tone(ctx, { freq, freqEnd, dur, type = "sine", vol = 0.2, delay = 0 }) {
+    const t = ctx.currentTime + delay;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, t);
+    if (freqEnd) osc.frequency.exponentialRampToValueAtTime(freqEnd, t + dur);
+    gain.gain.setValueAtTime(vol, t);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.02);
+  },
+
+  _noise(ctx, { dur, vol = 0.2, delay = 0, freq = 1200, freqEnd, q = 1.2 }) {
+    const t = ctx.currentTime + delay;
+    const src = ctx.createBufferSource();
+    src.buffer = this._noiseBuffer(ctx);
+    const filter = ctx.createBiquadFilter();
+    filter.type = "bandpass";
+    filter.frequency.setValueAtTime(freq, t);
+    if (freqEnd) filter.frequency.exponentialRampToValueAtTime(freqEnd, t + dur);
+    filter.Q.value = q;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(vol, t + dur * 0.3);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(filter).connect(gain).connect(ctx.destination);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  },
+
+  recipes: {
+    /* 木质轻扣 ~80ms · 0.12 */
+    hover(ctx) {
+      this._tone(ctx, { freq: 190, freqEnd: 120, dur: 0.08, type: "triangle", vol: 0.12 });
+    },
+    /* 软橡胶 tap · 0.22 */
+    tap(ctx) {
+      this._tone(ctx, { freq: 150, freqEnd: 88, dur: 0.11, vol: 0.22 });
+    },
+    /* 页面转化 · 翻纸 swish ~300ms · 0.28(全站签名音效) */
+    swish(ctx) {
+      this._noise(ctx, { dur: 0.3, vol: 0.28, freq: 900, freqEnd: 2600, q: 1.1 });
+    },
+    /* 台灯开关 click · 0.30 */
+    theme(ctx) {
+      this._tone(ctx, { freq: 1800, dur: 0.014, type: "square", vol: 0.18 });
+      this._tone(ctx, { freq: 900, dur: 0.03, type: "square", vol: 0.3, delay: 0.045 });
+    },
+    /* ⌘K 开 · 机械 blip · 0.20 */
+    cmdkOpen(ctx) {
+      this._tone(ctx, { freq: 700, freqEnd: 1400, dur: 0.055, type: "square", vol: 0.2 });
+    },
+    /* ⌘K 关 · pop · 0.20 */
+    cmdkClose(ctx) {
+      this._tone(ctx, { freq: 320, freqEnd: 160, dur: 0.07, vol: 0.2 });
+    },
+    /* 生成完成 · 极轻风铃 · 0.12 */
+    chime(ctx) {
+      this._tone(ctx, { freq: 1568, dur: 0.5, vol: 0.12 });
+      this._tone(ctx, { freq: 2093, dur: 0.6, vol: 0.09, delay: 0.07 });
+    },
+  },
+};
+
+/* ============================================================
+   主题 · 日间 / 夜晚台灯
+   ============================================================ */
+const ThemeStore = {
+  key: "smart-avatar-theme",
+
+  init() {
+    this.btn = document.querySelector("#theme-toggle");
+    this.syncIcon();
+    this.btn?.addEventListener("click", () => {
+      this.set(this.current() === "dark" ? "light" : "dark");
+      SoundFX.play("theme");
+    });
+  },
+
+  current() {
+    return document.documentElement.dataset.theme === "dark" ? "dark" : "light";
+  },
+
+  set(theme) {
+    document.documentElement.dataset.theme = theme;
+    try {
+      localStorage.setItem(this.key, theme);
+    } catch (e) {}
+    this.syncIcon();
+  },
+
+  syncIcon() {
+    if (!this.btn) return;
+    const dark = this.current() === "dark";
+    this.btn.querySelector(".icon-sun").hidden = dark;
+    this.btn.querySelector(".icon-moon").hidden = !dark;
+  },
+};
+
+/* ============================================================
+   SunlightCanvas · 3–4 团奶油/杏色/陶土慢速光斑
+   像下午四点穿窗帘的阳光 · 躺在留白里
+   ============================================================ */
+const Sunlight = {
+  blobs: [],
+  raf: 0,
+
+  init() {
+    this.canvas = document.querySelector("#sunlight");
+    if (!this.canvas) return;
+    this.reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    this.ctx = this.canvas.getContext("2d");
+    this.resize();
+    window.addEventListener("resize", () => this.resize());
+
+    const palette = [
+      [250, 236, 205], /* 奶油 */
+      [246, 216, 168], /* 杏 */
+      [226, 165, 116], /* 陶土淡 */
+      [248, 228, 190], /* 奶油杏 */
+    ];
+    for (let i = 0; i < 4; i++) {
+      this.blobs.push({
+        x: 0.12 + 0.76 * ((i * 41 + 13) % 100) / 100,
+        y: 0.15 + 0.6 * ((i * 67 + 29) % 100) / 100,
+        r: 0.3 + 0.14 * ((i * 53 + 7) % 100) / 100,
+        c: palette[i],
+        speed: 0.000014 + 0.000007 * i,
+        phase: i * 1.7,
+        drift: 0.05 + 0.02 * i,
+      });
+    }
+
+    if (this.reduced) {
+      this.draw(0); /* 静态渐变一帧 */
+      return;
+    }
+    const loop = (t) => {
+      if (!document.hidden) this.draw(t);
+      this.raf = requestAnimationFrame(loop);
+    };
+    this.raf = requestAnimationFrame(loop);
+  },
+
+  resize() {
+    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.canvas.width = window.innerWidth * this.dpr;
+    this.canvas.height = window.innerHeight * this.dpr;
+  },
+
+  draw(t) {
+    const { ctx, canvas } = this;
+    const w = canvas.width;
+    const h = canvas.height;
+    ctx.clearRect(0, 0, w, h);
+    const dark = document.documentElement.dataset.theme === "dark";
+    for (const b of this.blobs) {
+      const dx = Math.sin(t * b.speed + b.phase) * b.drift;
+      const dy = Math.cos(t * b.speed * 0.8 + b.phase * 1.3) * b.drift * 0.7;
+      const cx = (b.x + dx) * w;
+      const cy = (b.y + dy) * h;
+      const r = b.r * Math.min(w, h) * (1 + 0.06 * Math.sin(t * b.speed * 1.4 + b.phase));
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+      const [cr, cg, cb] = b.c;
+      const alpha = dark ? 0.1 : 0.24;
+      g.addColorStop(0, `rgba(${cr},${cg},${cb},${alpha})`);
+      g.addColorStop(1, `rgba(${cr},${cg},${cb},0)`);
+      ctx.fillStyle = g;
+      ctx.fillRect(cx - r, cy - r, r * 2, r * 2);
+    }
+  },
+};
+
+/* ============================================================
+   软点光标 · 12px 半透明暖橙,hover 温柔放大
+   ============================================================ */
+const CursorDot = {
+  x: -100,
+  y: -100,
+  tx: -100,
+  ty: -100,
+
+  init() {
+    this.el = document.querySelector("#cursor-dot");
+    if (!this.el) return;
+    if (window.matchMedia("(pointer: coarse)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    this.el.hidden = false;
+    document.addEventListener("mousemove", (e) => {
+      this.tx = e.clientX;
+      this.ty = e.clientY;
+    });
+    document.addEventListener("mouseover", (e) => {
+      const interactive = e.target.closest("a, button, input, select, textarea, summary, .heatmap-cell, .cmdk-item");
+      this.el.classList.toggle("is-hovering", !!interactive);
+    });
+    const loop = () => {
+      this.x += (this.tx - this.x) * 0.18;
+      this.y += (this.ty - this.y) * 0.18;
+      this.el.style.transform = `translate(${this.x}px, ${this.y}px) translate(-50%, -50%)`;
+      requestAnimationFrame(loop);
+    };
+    requestAnimationFrame(loop);
+  },
+};
+
+/* ============================================================
+   黑客位之叁 · 页脚状态行
+   ============================================================ */
+const StatusLine = {
+  init() {
+    this.el = document.querySelector("#status-line");
+    if (!this.el) return;
+    this.tick();
+    setInterval(() => this.tick(), 30000);
+  },
+
+  tick() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    this.el.textContent = `LOCAL ${hh}:${mm} · BUILT ${APP_BUILT} · ${APP_VERSION}`;
+  },
+};
+
+/* ============================================================
+   黑客位之壹 · ⌘K 命令面板(全站唯一终端)
+   ============================================================ */
+const CmdK = {
+  commands: [],
+  filtered: [],
+  activeIndex: 0,
+
+  init() {
+    this.root = document.querySelector("#cmdk");
+    this.input = document.querySelector("#cmdk-input");
+    this.list = document.querySelector("#cmdk-list");
+    if (!this.root || !this.input || !this.list) return;
+    this.buildCommands();
+
+    document.querySelector("#cmdk-open")?.addEventListener("click", () => this.open());
+    this.root.querySelector("[data-cmdk-close]")?.addEventListener("click", () => this.close());
+    this.input.addEventListener("input", () => {
+      this.activeIndex = 0;
+      this.render();
+    });
+    this.input.addEventListener("keydown", (e) => this.onKey(e));
+
+    document.addEventListener("keydown", (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        this.root.hidden ? this.open() : this.close();
+      } else if (e.key === "Escape" && !this.root.hidden) {
+        this.close();
+      }
+    });
+  },
+
+  buildCommands() {
+    const nav = Object.keys(titles).map((tab) => ({
+      label: `去「${titles[tab].title}」`,
+      hint: titles[tab].index,
+      kind: "PAGE",
+      run: () => activateTab(tab),
+    }));
+    const actions = [
+      { label: "写一条消息", kind: "ACTION", run: () => { activateTab("chat"); focusSoon("#chat-message"); } },
+      { label: "新增一条记忆", kind: "ACTION", run: () => { activateTab("memories"); focusSoon("#memory-summary"); } },
+      { label: "生成今日故事", kind: "ACTION", run: () => { activateTab("story"); focusSoon("#story-prompt"); } },
+      { label: "开始 / 停止录音", kind: "ACTION", run: () => { activateTab("recordings"); setTimeout(() => elements.recordToggle?.click(), 400); } },
+      { label: "切换主题(日间 / 夜晚台灯)", kind: "ACTION", run: () => document.querySelector("#theme-toggle")?.click() },
+      { label: "切换音效", kind: "ACTION", run: () => document.querySelector("#sound-toggle")?.click() },
+      { label: "导出全部数据", kind: "ACTION", run: () => { window.location.href = "/api/v1/export"; } },
+      { label: "打开调试面板", kind: "ACTION", run: () => DebugPanel.toggle(true) },
+    ];
+    this.commands = [...nav, ...actions];
+  },
+
+  open() {
+    this.root.hidden = false;
+    this.input.value = "";
+    this.activeIndex = 0;
+    this.render();
+    SoundFX.play("cmdkOpen");
+    setTimeout(() => this.input.focus(), 30);
+  },
+
+  close() {
+    if (this.root.hidden) return;
+    this.root.hidden = true;
+    SoundFX.play("cmdkClose");
+  },
+
+  onKey(e) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this.move(1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this.move(-1);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const cmd = this.filtered[this.activeIndex];
+      if (cmd) {
+        this.close();
+        cmd.run();
+      }
+    }
+  },
+
+  move(delta) {
+    if (!this.filtered.length) return;
+    this.activeIndex = (this.activeIndex + delta + this.filtered.length) % this.filtered.length;
+    this.render();
+  },
+
+  match(query, text) {
+    /* 子序列模糊匹配 */
+    const q = query.toLowerCase();
+    const t = text.toLowerCase();
+    let qi = 0;
+    for (let i = 0; i < t.length && qi < q.length; i++) {
+      if (t[i] === q[qi]) qi++;
+    }
+    return qi === q.length;
+  },
+
+  render() {
+    const q = this.input.value.trim();
+    this.filtered = q ? this.commands.filter((c) => this.match(q, c.label)) : this.commands;
+    if (this.activeIndex >= this.filtered.length) this.activeIndex = 0;
+    if (!this.filtered.length) {
+      this.list.innerHTML = `<li class="cmdk-empty">没有匹配的命令</li>`;
+      return;
+    }
+    this.list.innerHTML = this.filtered
+      .map(
+        (c, i) => `
+      <li class="cmdk-item ${i === this.activeIndex ? "is-active" : ""}" role="option" data-index="${i}">
+        <span>${escapeHtml(c.label)}</span>
+        <span class="cmdk-item-kind">${escapeHtml(c.hint || c.kind)}</span>
+      </li>`
+      )
+      .join("");
+    this.list.querySelectorAll(".cmdk-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const cmd = this.filtered[Number(item.dataset.index)];
+        if (cmd) {
+          this.close();
+          cmd.run();
+        }
+      });
+      item.addEventListener("mousemove", () => {
+        const idx = Number(item.dataset.index);
+        if (idx !== this.activeIndex) {
+          this.activeIndex = idx;
+          this.render();
+        }
+      });
+    });
+    this.list.querySelector(".cmdk-item.is-active")?.scrollIntoView({ block: "nearest" });
+  },
+};
+
+/* ============================================================
+   黑客位之肆 · 调试面板(按 ` 开合)
+   ============================================================ */
+const DebugPanel = {
+  init() {
+    this.root = document.querySelector("#debug-panel");
+    this.content = document.querySelector("#debug-content");
+    if (!this.root || !this.content) return;
+    document.querySelector("#debug-close")?.addEventListener("click", () => this.toggle(false));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "`" && !e.metaKey && !e.ctrlKey && !isTyping(e)) {
+        e.preventDefault();
+        this.toggle(this.root.hidden);
+      }
+    });
+    setInterval(() => {
+      if (!this.root.hidden) this.render();
+    }, 1000);
+  },
+
+  toggle(show) {
+    this.root.hidden = !show;
+    if (show) {
+      this.render();
+      SoundFX.play("cmdkOpen");
+    }
+  },
+
+  render() {
+    const up = Math.floor((Date.now() - stats.startedAt) / 1000);
+    const upText = up < 60 ? `${up}s` : `${Math.floor(up / 60)}m ${up % 60}s`;
+    let mem = "n/a";
+    if (performance.memory) mem = `${(performance.memory.usedJSHeapSize / 1048576).toFixed(1)} MB`;
+    const lines = [
+      `BUILT   ${APP_BUILT} · ${APP_VERSION}`,
+      `UPTIME  ${upText}`,
+      `REQS    ${stats.requests}${stats.lastRequestId ? ` · last ${stats.lastRequestId}` : ""}`,
+      `HEALTH  ${stats.healthMs !== null ? `${stats.healthMs}ms` : "—"}`,
+      `MEM     ${mem}`,
+      `THEME   ${ThemeStore.current()} · SOUND ${SoundFX.enabled && !SoundFX.reduced ? "on" : "off"}`,
+      `VIEW    ${window.innerWidth}×${window.innerHeight} · DPR ${window.devicePixelRatio || 1}`,
+    ];
+    this.content.textContent = lines.join("\n");
+  },
+};
+
+/* ============================================================
+   黑客位之贰 · 一年的日常(暖橙五档热力图)
+   真实记忆/录音聚合 · 空库时固定 seed 示例(禁渲染时随机)
+   ============================================================ */
+const Heatmap = {
+  DAYS: 364,
+
+  init() {
+    this.el = document.querySelector("#heatmap");
+    this.note = document.querySelector("#heatmap-note");
+    if (!this.el) return;
+    this.refresh();
+  },
+
+  async refresh() {
+    if (!this.el) return;
+    let counts = null;
+    try {
+      const [memories, recordings] = await Promise.all([
+        apiFetch("/memories?limit=500", { method: "GET" }),
+        apiFetch("/recordings?limit=200", { method: "GET" }),
+      ]);
+      counts = this.aggregate(memories, recordings);
+    } catch (error) {
+      counts = null;
+    }
+    if (!counts || counts.total === 0) {
+      counts = this.seededDemo();
+      this.note.textContent = "示例密度 · 写入第一条记忆后,这里会长出你的日常";
+    } else {
+      this.note.textContent = `过去一年,共 ${counts.total} 条记忆与录音`;
+    }
+    this.render(counts.byDay);
+  },
+
+  aggregate(memories, recordings) {
+    const byDay = {};
+    let total = 0;
+    const add = (stamp) => {
+      if (!stamp) return;
+      const day = String(stamp).slice(0, 10);
+      byDay[day] = (byDay[day] || 0) + 1;
+      total += 1;
+    };
+    (memories || []).forEach((m) => add(m.created_at));
+    (recordings || []).forEach((r) => add(r.recorded_at));
+    return { byDay, total };
+  },
+
+  /* mulberry32 固定 seed 生成器:每次渲染结果一致 */
+  seededDemo() {
+    let seed = 20260716;
+    const rand = () => {
+      seed |= 0;
+      seed = (seed + 0x6d2b79f5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const byDay = {};
+    const today = new Date();
+    for (let i = this.DAYS; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = toDayKey(d);
+      const recency = 1 - i / this.DAYS;
+      const weekday = d.getDay() > 0 && d.getDay() < 6 ? 0.22 : 0;
+      if (rand() < 0.26 + recency * 0.38 + weekday) {
+        byDay[key] = 1 + Math.floor(rand() * 4 * (0.4 + recency));
+      }
+    }
+    return { byDay, total: Object.values(byDay).reduce((a, b) => a + b, 0) };
+  },
+
+  level(v) {
+    if (!v) return 0;
+    if (v === 1) return 1;
+    if (v === 2) return 2;
+    if (v <= 4) return 3;
+    return 4;
+  },
+
+  render(byDay) {
+    const today = new Date();
+    const start = new Date(today);
+    start.setDate(start.getDate() - (this.DAYS - 1));
+    start.setDate(start.getDate() - start.getDay()); /* 对齐到周日 */
+    const cells = [];
+    const cursor = new Date(start);
+    while (cursor <= today) {
+      const key = toDayKey(cursor);
+      const v = byDay[key] || 0;
+      cells.push(`<span class="heatmap-cell" data-level="${this.level(v)}" title="${key} · ${v} 条"></span>`);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    this.el.innerHTML = cells.join("");
+  },
+};
+
+/* ===== 小工具 ===== */
+function toDayKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function focusSoon(selector) {
+  setTimeout(() => document.querySelector(selector)?.focus(), 400);
+}
+
+function isTyping(e) {
+  return !!e.target.closest("input, textarea, select, [contenteditable]");
 }

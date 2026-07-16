@@ -1,0 +1,118 @@
+/* ============================================================
+   智慧分身 · 颜色 tokens(全站唯一调色入口)
+   改色只动这一个文件:VSCode 悬停任意色值 → 取色轮拖拽即可
+   阴影/光晕色值取自下方 token,调主色时会自动跟随
+
+   当前方案「午后工作室 · 柔焦版」:最初版本的调淡修正
+   奶油纸 #FAF6EC + 软化陶土 #C96645 + 鼠尾草 #8AA87A
+   骨架参考社区验证组合 #FDF6EC / #E07A5F / #81B29A
+   ============================================================ */
+
+:root {
+  color-scheme: light;
+
+  /* —— 纸面(底色) —— */
+  --paper: #faf6ec;        /* 页面底 · 淡奶油 */
+  --surface: #f4eee0;      /* 侧栏 / 输入框底 */
+  --card: #fffdf6;         /* 卡片 */
+  --card-2: #f7f1e2;       /* 卡片头 / 浅一层 */
+
+  /* —— 文字(暖棕黑,不用纯黑) —— */
+  --ink: #4a3d31;          /* 主文字 */
+  --text-2: #6d5d4e;       /* 次级 */
+  --muted: #93826f;        /* 弱 */
+  --faint: #c0b1a0;        /* 最弱 / 占位 */
+
+  /* —— 线条 —— */
+  --line: #ece2d0;         /* 分隔线 */
+  --line-2: #e0d4bd;       /* 边框 */
+
+  /* —— 软化陶土 · 全站唯一强调色 —— */
+  --accent: #c96645;       /* 按钮 / 激活态 / 高亮 */
+  --accent-deep: #ad5136;  /* accent hover 加深 */
+  --accent-soft: #f7e4d9;  /* accent 浅底(选中项背景) */
+  --accent-glow: rgba(201, 102, 69, 0.15); /* accent 光晕/焦点圈 */
+
+  /* —— 鼠尾草绿 · 次要点缀(成功态/故事锚点) —— */
+  --sage: #8aa87a;
+  --sage-deep: #6f8f60;
+  --sage-soft: #e9efe0;
+  --sage-glow: rgba(138, 168, 122, 0.14);
+
+  /* —— 警示 —— */
+  --rose: #b4523f;
+  --rose-soft: #f6e2da;
+
+  /* —— 热力图五档(奶油→软化陶土,与 accent 同族) —— */
+  --heat-0: #f1e8d8;
+  --heat-1: #f5dab8;
+  --heat-2: #eec190;
+  --heat-3: #e09a63;
+  --heat-4: #c96645;
+
+  /* —— 画布与颗粒强度 —— */
+  --sun-opacity: 0.85;     /* 午后阳光光斑 */
+  --grain-opacity: 0.05;   /* 胶片颗粒 */
+
+  /* —— 阴影色值(取自 --ink / --accent,一般不手改) —— */
+  --shadow-rgb: 74, 61, 49;          /* = --ink */
+  --glow-accent-rgb: 201, 102, 69;   /* = --accent */
+  --glow-sage-rgb: 138, 168, 122;    /* = --sage */
+
+  /* —— 阴影(暖棕调) —— */
+  --shadow-xs: 0 1px 2px rgba(var(--shadow-rgb), 0.05);
+  --shadow-sm: 0 2px 10px rgba(var(--shadow-rgb), 0.06);
+  --shadow-md: 0 8px 24px rgba(var(--shadow-rgb), 0.08), 0 1px 3px rgba(var(--shadow-rgb), 0.04);
+  --shadow-lg: 0 18px 52px rgba(var(--shadow-rgb), 0.13), 0 4px 12px rgba(var(--shadow-rgb), 0.06);
+  --shadow-inset: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+/* ===== 夜晚台灯 · 暗色(最初版) ===== */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --paper: #221a13;        /* 深暖棕,台灯下的桌面 */
+  --surface: #2a211a;
+  --card: #2e251c;
+  --card-2: #342a20;
+
+  --ink: #f0e5d2;          /* 奶油字 */
+  --text-2: #c9b8a2;
+  --muted: #9c8a73;
+  --faint: #6e5f4d;
+
+  --line: #3b2f23;
+  --line-2: #4b3c2c;
+
+  --accent: #d97757;       /* 暗色下陶土橙提亮 */
+  --accent-deep: #c96645;
+  --accent-soft: #402c1e;
+  --accent-glow: rgba(217, 119, 87, 0.18);
+
+  --sage: #93ad87;
+  --sage-deep: #a8bf9c;
+  --sage-soft: #2d3328;
+  --sage-glow: rgba(147, 173, 135, 0.16);
+
+  --rose: #d0705a;
+  --rose-soft: #3e241d;
+
+  --heat-0: #322920;
+  --heat-1: #5a3d28;
+  --heat-2: #8a5a35;
+  --heat-3: #b8713f;
+  --heat-4: #d97757;
+
+  --sun-opacity: 0.4;
+  --grain-opacity: 0.07;
+
+  --shadow-rgb: 0, 0, 0;
+  --glow-accent-rgb: 217, 119, 87;
+  --glow-sage-rgb: 147, 173, 135;
+
+  --shadow-xs: 0 1px 2px rgba(var(--shadow-rgb), 0.3);
+  --shadow-sm: 0 2px 10px rgba(var(--shadow-rgb), 0.32);
+  --shadow-md: 0 8px 24px rgba(var(--shadow-rgb), 0.36), 0 1px 3px rgba(var(--shadow-rgb), 0.3);
+  --shadow-lg: 0 18px 52px rgba(var(--shadow-rgb), 0.44), 0 4px 12px rgba(var(--shadow-rgb), 0.34);
+  --shadow-inset: inset 0 1px 0 rgba(255, 240, 220, 0.06);
+}
