@@ -1,54 +1,53 @@
-# 智慧分身 × 0G — 演示视频脚本(2–3 分钟)
+# 智慧分身 × 0G — 演示视频脚本（今日录制版）
 
-> 赛道2提交用。核心叙事:**你的记忆只属于你的同时,每一次 AI 推理都在 0G 链上可验证。**
-> 录制前确认:线上 chat 已返回 `verification.chat_id`(见文末「验证清单」)。
+> 录制环境：http://localhost:8000(Gonka Kimi-K2.6 真实推理，已起服)。
+> 叙事主线：**记忆归你，推理可证。** 产品功能真实演示 + 0G 链上证据现场查验。
+> 录制前：终端字体调大(≥16px)，浏览器只留 localhost:8000 和 chainscan-galileo.0g.ai 两个标签。
 
 ## 分镜表
 
-| # | 时长 | 画面 | 旁白 |
+| # | 时长 | 画面 | 旁白（要点，口语化即可） |
 |---|------|------|------|
-| 1 | 0:00–0:20 | 打开 https://smart-clone.onrender.com ,首页/聊天界面 | 「智慧分身,一个隐私优先的个人记忆 AI。它记住你的经历,回答你的问题——而且每一次推理,都在 0G Compute Network 上可被验证。」 |
-| 2 | 0:20–0:50 | 上传一段录音(或现场录一段 10 秒语音),展示自动转写、自动抽取记忆卡片的过程 | 「说它听的:一段语音进来,自动转写、自动提炼成脱敏记忆卡片。原始音频可以定期删除,留下的只是结构化的事实。」 |
-| 3 | 0:50–1:30 | 聊天框提问:「我在哪里学会做啤酒鱼的?」展示回答 + 引用记忆卡片 | 「问它记的:回答严格基于你自己的记忆卡片,每条结论都有引用来源。记忆不够,它诚实地说不知道,而不是编造。」 |
-| 4 | 1:30–2:10 | **关键镜头**:展开回答下方的 verification 区块(chatID、模型 qwen2.5-omni-7b、Provider 地址);切到终端,用 curl 再调一次,JSON 里的 `verification.chat_id` 特写;打开 0G 测试网浏览器,展示该地址的链上交易 | 「这次回答不是黑箱:它跑在 0G Compute Network 的 TEE 可验证推理上。每个 chatID 对应链上一笔可审计的记录——模型是谁、Provider 是谁、结果有没有被篡改,全部可查。」 |
-| 5 | 2:10–2:40 | 展示设置/隐私页:记忆卡片的隐私分级、审计日志(audit)列表 | 「隐私不是口号:记忆脱敏分级、工具调用逐条审计、原始记忆不出本地边界。你可以随时导出或删除全部数据。」 |
-| 6 | 2:40–3:00 | 结尾页:项目名 + GitHub 仓库地址 + 「Built on 0G Compute Network」 | 「智慧分身:记忆归你,推理可证。代码开源,欢迎验证。」 |
+| 1 | 0:00–0:15 | localhost:8000 首页 | 「智慧分身，隐私优先的个人记忆 AI。所有记忆留在你的本地边界内，而每一次 AI 推理，都可以在 0G Compute Network 上被验证。」 |
+| 2 | 0:15–0:40 | 上传一段录音（或手动添加一条记忆卡片），展示记忆卡片生成 | 「说它听的：一段语音进来，自动转写、提炼成脱敏记忆卡片。原始音频定期删除，留下的只是结构化事实。」 |
+| 3 | 0:40–1:20 | 聊天框问：「我在哪里学会做啤酒鱼的？」展示 Kimi 回答 + 引用卡片 | 「问它记的：回答严格基于你自己的记忆，每条结论有引用来源。记忆不够，它诚实说不知道，而不是编造。这里由大模型实时推理，不是写死的文案。」 |
+| 4 | 1:20–2:10 | **切到技术架构**（见下方「链上完整作用」逐条讲）:README 的 0G 证据区 → 浏览器打开两笔交易 → 终端跑链上查询命令 | 「推理为什么可信？因为它跑在 0G Compute Network 的 TEE 可验证推理上。」 |
+| 5 | 2:10–2:35 | 设置/隐私页 + 审计日志 | 「隐私不是口号：记忆脱敏分级、工具调用逐条审计、随时导出或删除全部数据。」 |
+| 6 | 2:35–2:50 | 结尾页：项目名 + GitHub + Built on 0G Compute Network | 「智慧分身：记忆归你，推理可证。代码开源，欢迎查验。」 |
 
-## 第 4 镜头终端命令(提前开好终端)
+## 镜头 4：0G 链上的完整作用（照这个逻辑讲，约 50 秒）
 
+用一张逻辑链讲清楚，每一步都给评委看对应证据：
+
+**① 身份与支付在链上（说 10 秒）**
+「在 0G 上，用户和算力节点都不需要互信：我的推理账户开在 Galileo 测试网的合约里。」
+→ 画面：浏览器打开账户页 `https://chainscan-galileo.0g.ai/address/0x1a6A20590D06B872110fE220198A3B76dE65B244`
+
+**② 锁仓与 TEE 确认在链上（说 15 秒）**
+「使用前，我把推理费用锁仓给 TEE Provider，并在链上确认它的 TEE 签名者——这两笔交易现在就查得到。」
+→ 画面：依次打开两笔交易（浏览器直接看，再切终端跑一次）:
 ```bash
-# 一行命令拿到带 chatID 的回答(替换问题即可)
-curl -s https://smart-clone.onrender.com/api/v1/chat \
-  -H "content-type: application/json" \
-  -d '{"message":"我在哪里学会做啤酒鱼的?"}' | python3 -m json.tool
+# 锁仓 0.2 0G 给 qwen2.5-omni-7b 的 TEE Provider
+curl -s https://evmrpc-testnet.0g.ai -X POST -H "content-type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["0x02ce03a2b0671dc48eddae2b217e4eb7db32a01b12b04f0ad834fe0687743ed6"],"id":1}'
+# TEE 签名者确认
+curl -s https://evmrpc-testnet.0g.ai -X POST -H "content-type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_getTransactionReceipt","params":["0xe6d816472e64af7c998682e7936604ad254881f0170ee3e8280dfd73b320d50c"],"id":1}'
 ```
+（两条都返回 `"status":"0x1"` 即成功，镜头给 status 特写 1 秒）
 
-特写这个字段:
+**③ 推理结果可验证在链上（说 15 秒）**
+「每次推理的响应都会携带链上 chatID：模型是谁、Provider 是谁、结果有没有被篡改，全部可回溯。代码已完整实现（指一下 `models.py` 的 `ZeroGVerifiableClient.generate_with_proof`)；测试网水龙头冷却结束后补足锁仓，线上回答即刻带 `verification.chat_id`。」
+→ 画面：README 里的 verification JSON 示例 + 代码文件。
 
-```json
-"verification": {
-  "chat_id": "0x....",          // ← 镜头停留 2 秒
-  "model": "qwen/qwen2.5-omni-7b",
-  "provider": "0xa48f...7836",
-  "verifiable": true,
-  "network": "0G Compute Network"
-}
-```
+**④ 隐私与可验证不冲突（说 10 秒）**
+「关键是：链上只有凭证和结算，你的记忆原文永远不出本地。隐私和可验证，第一次可以同时成立。」
 
-链上佐证(0G Galileo 测试网浏览器):
-- 用户账户交易:https://chainscan-galileo.0g.ai/address/0x1a6A20590D06B872110fE220198A3B76dE65B244
-- 可展示:addLedger / transferFund / acknowledgeTEESigner 三笔交易
+## 兜底提示
 
-## 录制前验证清单
-
-- [ ] 线上 `/api/v1/config` 显示 `"provider": "0g_verifiable"`
-- [ ] 聊天回答里 `verification.chat_id` 非 null
-- [ ] 演示用记忆已就位(桂林啤酒鱼故事已在线上有,或换一条)
-- [ ] 终端字体调大(>=16px),curl 命令提前跑通一遍
-- [ ] 网络代理不影响 onrender.com 与 chainscan-galileo.0g.ai 打开速度
-
-## 兜底方案
-
-若录制时线上仍未通:
-1. 本地 `SMART_AVATAR_CONFIG=config/app.0g.json .venv/bin/python -m uvicorn smart_avatar.app:app --port 8000` 起服务,第 4 镜头全部改录 localhost(画面标注「本地运行,同一代码已部署 Render」)
-2. 只演示已有的链上交易 + 本地 chatID,口述线上部署状态
+- localhost 服务若断：终端里重新跑
+  ```bash
+  SMART_AVATAR_CONFIG=config/app.gonka.json GONKA_API_KEY=<key> .venv/bin/python -m uvicorn smart_avatar.app:app --port 8000
+  ```
+- chainscan 打开慢：提前 30 秒先把两个标签开好
+- 录完不用等明天：视频直接交，链接不变
