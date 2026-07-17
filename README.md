@@ -41,7 +41,7 @@ python -m uvicorn smart_avatar.app:app --host 0.0.0.0 --port 8000
 
 ### 3. 打开 Web 控制台
 
-访问 **http://localhost:8000** ，即可看到「墨韵档案」控制台：
+访问 **http://localhost:8000** ，即可看到「午后工作室 · Life OS」控制台：
 Chat 中枢 · 录音采集 · 记忆仓库 · 今日故事 · Skill Registry · MCP 工具 · 授权凭证 · 设置 · 审计日志。
 
 API 交互文档见 **http://localhost:8000/docs** （Swagger UI，自动生成）。
@@ -79,7 +79,7 @@ docker run -d -p 8000:8000 \
 | 接入层 | 说明 | 入口 |
 | --- | --- | --- |
 | **REST API** | 记忆/状态/对话/Skill/凭证全量接口 | `/api/v1/*`，文档见 `/docs` |
-| **Web App** | 墨韵档案控制台，覆盖全部功能 | `/` |
+| **Web App** | 午后工作室控制台，覆盖全部功能 | `/` |
 | **Skill 插件** | 新增 `skills/<name>/skill.json` 即插即用，核心代码零改动 | `skills/` |
 | **MCP 工具** | 通过 `tools/<name>/tool.json` 声明外部工具，统一网关调用 | `tools/` |
 | **模型 Provider** | 抽象适配任意 OpenAI 兼容服务（DeepSeek/通义/Moonshot/Ollama） | `config/app.json` |
